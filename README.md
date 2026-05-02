@@ -4,17 +4,16 @@
 
 ## 订阅地址
 
-| 文件 | 说明 | 订阅链接 |
-|------|------|----------|
-| `curated.yaml` | 精选 29 组（仅测速源） | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated.yaml` |
-| `curated-nodes.yaml` | 精选节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-nodes.yaml` |
-| `acl4ssr.yaml` | ACL4SSR 29 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr.yaml` |
-| `acl4ssr-nodes.yaml` | ACL4SSR 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr-nodes.yaml` |
-| `freesub.yaml` | freeSub 24 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub.yaml` |
-| `freesub-nodes.yaml` | freeSub 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub-nodes.yaml` |
-| `all-nodes.yaml` | 全部节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/all-nodes.yaml` |
-
-国内加速前缀: `https://gh-proxy.org/` (加在链接前面即可)
+| 文件 | 说明 | 直连 | 加速 |
+|------|------|------|------|
+| `curated.yaml` | 精选 mihomo 29 组 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated.yaml` |
+| `curated-singbox.json` | 精选 sing-box 格式 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-singbox.json` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-singbox.json` |
+| `curated-nodes.yaml` | 精选节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-nodes.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-nodes.yaml` |
+| `acl4ssr.yaml` | ACL4SSR 29 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr.yaml` |
+| `acl4ssr-nodes.yaml` | ACL4SSR 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr-nodes.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr-nodes.yaml` |
+| `freesub.yaml` | freeSub 24 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub.yaml` |
+| `freesub-nodes.yaml` | freeSub 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub-nodes.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub-nodes.yaml` |
+| `all-nodes.yaml` | 全部节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/all-nodes.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/all-nodes.yaml` |
 
 ## 快速订阅
 
@@ -79,7 +78,7 @@ mihomo sub add "https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mih
 
 | 输出 | 包含源 | 说明 |
 |------|--------|------|
-| `curated` | FreeSubsCheck, shaoyouvip, dalazhi, getnode | 精选：只有带测速标记的源 |
+| `curated` | FreeSubsCheck, shaoyouvip, dalazhi, getnode | 精选：只保留 HK/JP/US/TW/SG/KR 地区的测速节点 |
 | `acl4ssr` | 上述 7 个 ACL4SSR 源 | 全量 29 组，节点多但质量参差 |
 | `freesub` | freeSub | 24 组，有解锁标签和质量标记 |
 | `all-nodes` | 全部 25 个源 | 纯节点列表，无分组规则 |
@@ -90,13 +89,13 @@ mihomo sub add "https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mih
 - 移除 `_github.com/Ruk1ng001_`（freeSub 源）
 - 圆圈 emoji 替换为尾部标签：🟢→`|优` 🟡→`|良` 🔴→`|差` ⚪→`|未知`
 - 清理推广文本（Telegram/机场推荐/域名等），保留节点
-- 去重规则：`协议+服务器+端口+名称` 相同视为重复
+- 去重规则：`协议+服务器+端口` 相同视为重复
 
 ## 工作方式
 
 1. GitHub Actions 每小时拉取所有 25 个源
 2. 清理节点名称（去推广、标准化）
-3. 按 `type|server|port|name` 去重
-4. TCP 连通性测试（3s 超时，100 并发），过滤死节点
-5. 按分类生成完整配置和纯节点列表
+3. 按 `type|server|port` 去重
+4. mihomo 协议握手测试（2s 超时，100 并发），过滤不可用节点
+5. 按分类生成完整配置、纯节点列表和 sing-box 格式
 6. 强推到 `sub` 分支（保持干净，仅一个 commit）
