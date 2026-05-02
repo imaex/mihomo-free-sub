@@ -161,8 +161,8 @@ const COUNTRY_FLAGS: Record<string, string> = {
   HK: '🇭🇰', JP: '🇯🇵', US: '🇺🇸', TW: '🇨🇳', SG: '🇸🇬', KR: '🇰🇷',
 };
 
-const CURATED_LIMITS: Record<string, number> = { HK: 20, TW: 20 };
-const CURATED_DEFAULT_LIMIT = 15;
+const CURATED_LIMITS: Record<string, number> = { HK: 50, US: 50 };
+const CURATED_DEFAULT_LIMIT = 20;
 
 function parseSpeed(name: string): number {
   const m = name.match(/(\d+(?:\.\d+)?)\s*(MB|KB)\/s/);
@@ -204,10 +204,11 @@ function sortScore(name: string): number {
 
 function extractTags(name: string): string {
   const speed = name.match(/\|⬇?[\d.]+\s*[MK]B\/s/)?.[0] ?? '';
-  const loss = name.match(/\|\d+%/)?.[0] ?? '';
   const mult = parseMultiplier(name);
-  const multStr = mult > 0 ? `|x${mult}` : '';
-  return `${speed}${loss}${multStr}`;
+  const multStr = mult > 0 ? ` x${mult}` : '';
+  const loss = name.match(/\|(\d+)%/);
+  const lossStr = loss ? `|${loss[1]}%` : '';
+  return `${speed}${multStr}${lossStr}`;
 }
 
 function topByCountry(proxies: Proxy[]): Proxy[] {
