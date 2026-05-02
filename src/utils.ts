@@ -20,7 +20,7 @@ export function writeYaml(filePath: string, data: unknown): void {
   fs.writeFileSync(filePath, content, 'utf-8');
 }
 
-export const COUNTRY_CODE_RE = /([A-Z]{2})_\d+/;
+export const COUNTRY_CODE_RE = /([A-Z]{2})[²¹⁰³⁴⁵⁶⁷⁸⁹⁻]*(?:-[A-Z]{2}[²¹⁰³⁴⁵⁶⁷⁸⁹⁻]*)?_\d+/;
 
 export function extractCountryCode(name: string): string | null {
   const m = name.match(COUNTRY_CODE_RE);

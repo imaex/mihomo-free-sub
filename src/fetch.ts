@@ -106,7 +106,7 @@ function collectProxies(
   return proxies;
 }
 
-const CURATED_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getnode']);
+const CURATED_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getnode', 'yahr601']);
 const CURATED_COUNTRIES = new Set(['HK', 'JP', 'US', 'TW', 'SG', 'KR']);
 
 function matchCuratedCountry(name: string): boolean {
@@ -132,7 +132,7 @@ function dedup(results: FetchResult[]): {
   const acl4ssr = collectProxies(results, (s) => s.category === 'acl4ssr');
   const freesub = collectProxies(results, (s) => s.category === 'freesub');
   const curated = collectProxies(results, (s, p) =>
-    CURATED_SOURCES.has(s.name) && matchCuratedCountry(p.name),
+    CURATED_SOURCES.has(s.name) && matchCuratedCountry(p.name) && !p.name.includes('|100%'),
   );
   const all = collectProxies(results, () => true);
 

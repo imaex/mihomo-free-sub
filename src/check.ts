@@ -171,6 +171,26 @@ function parseSpeed(name: string): number {
   return m[2] === 'KB' ? val / 1024 : val;
 }
 
+function parseLossRate(name: string): number {
+  const m = name.match(/\|(\d+)%/);
+  return m ? parseInt(m[1], 10) : -1;
+}
+
+function sortScore(name: string): number {
+  const speed = parseSpeed(name);
+  if (speed > 0) return 10000 + speed;
+  const loss = parseLossRate(name);
+  if (loss >= 0) return 5000 - loss;
+  return 0;
+}
+
+function extractTags(name: string): string {
+  const speed = name.match(/\|⬇?[\d.]+\s*[MK]B\/s/)?.[0] ?? '';
+  const loss = name.match(/\|\d+%/)?.[0] ?? '';
+  const funcTags = name.match(/\|(?:GPT⁺?|GM|YT|优|良|差|未知)/g) ?? [];
+  return `${speed}${loss}${funcTags.join('')}`;
+}
+
 function topByCountry(proxies: Proxy[]): Proxy[] {
   const groups = new Map<string, Proxy[]>();
   for (const p of proxies) {
@@ -181,13 +201,12 @@ function topByCountry(proxies: Proxy[]): Proxy[] {
   const result: Proxy[] = [];
   for (const [code, members] of groups) {
     const limit = CURATED_LIMITS[code] ?? CURATED_DEFAULT_LIMIT;
-    members.sort((a, b) => parseSpeed(b.name) - parseSpeed(a.name));
+    members.sort((a, b) => sortScore(b.name) - sortScore(a.name));
     const top = members.slice(0, limit);
     for (let i = 0; i < top.length; i++) {
-      const speed = top[i].name.match(/\|[\d.]+\s*[MK]B\/s/)?.[0] ?? '';
-      const tags = top[i].name.match(/\|(?:GPT|GM|YT|优|良|差|未知)(?:\+)?/g) ?? [];
       const flag = COUNTRY_FLAGS[code] ?? '';
-      top[i].name = `${flag}${code}_${i + 1}${speed}${tags.join('')}`;
+      const tags = extractTags(top[i].name);
+      top[i].name = `${flag}${code}_${i + 1}${tags}`;
     }
     result.push(...top);
   }
