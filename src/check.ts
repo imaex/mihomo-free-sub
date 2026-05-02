@@ -157,7 +157,8 @@ async function testBatch(proxies: Proxy[], binary: string): Promise<Proxy[]> {
   }
 }
 
-const CURATED_MAX_PER_COUNTRY = 25;
+const CURATED_LIMITS: Record<string, number> = { HK: 20, TW: 20 };
+const CURATED_DEFAULT_LIMIT = 15;
 
 function parseSpeed(name: string): number {
   const m = name.match(/(\d+(?:\.\d+)?)\s*(MB|KB)\/s/);
@@ -174,9 +175,16 @@ function topByCountry(proxies: Proxy[]): Proxy[] {
     groups.get(code)!.push(p);
   }
   const result: Proxy[] = [];
-  for (const members of groups.values()) {
+  for (const [code, members] of groups) {
+    const limit = CURATED_LIMITS[code] ?? CURATED_DEFAULT_LIMIT;
     members.sort((a, b) => parseSpeed(b.name) - parseSpeed(a.name));
-    result.push(...members.slice(0, CURATED_MAX_PER_COUNTRY));
+    const top = members.slice(0, limit);
+    for (let i = 0; i < top.length; i++) {
+      const speed = top[i].name.match(/\|[\d.]+\s*[MK]B\/s/)?.[0] ?? '';
+      const tags = top[i].name.match(/\|(?:GPT|GM|YT|优|良|差|未知)(?:\+)?/g) ?? [];
+      top[i].name = `${code}_${i + 1}${speed}${tags.join('')}`;
+    }
+    result.push(...top);
   }
   return result;
 }
@@ -204,7 +212,7 @@ async function main() {
       if (cat.file === 'curated-raw.yaml') {
         const before = proxies.length;
         proxies = topByCountry(proxies);
-        console.log(`  Top 筛选: ${proxies.length}/${before} (每地区最多 ${CURATED_MAX_PER_COUNTRY})`);
+        console.log(`  Top 筛选: ${proxies.length}/${before} (HK/TW 最多 ${CURATED_LIMITS['HK']}，其他 ${CURATED_DEFAULT_LIMIT})`);
       }
       writeYaml(filePath, { proxies });
     }
