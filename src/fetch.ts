@@ -107,34 +107,10 @@ function dedupCategory(results: FetchResult[], category: string): Proxy[] {
 
 const CURATED_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getnode']);
 const CURATED_COUNTRIES = new Set(['HK', 'JP', 'US', 'TW', 'SG', 'KR']);
-const CURATED_MAX_PER_COUNTRY = 15;
 
 function matchCuratedCountry(name: string): boolean {
   const m = name.match(/([A-Z]{2})_\d+/);
   return m ? CURATED_COUNTRIES.has(m[1]) : false;
-}
-
-function parseSpeed(name: string): number {
-  const m = name.match(/(\d+(?:\.\d+)?)\s*(MB|KB)\/s/);
-  if (!m) return 0;
-  const val = parseFloat(m[1]);
-  return m[2] === 'KB' ? val / 1024 : val;
-}
-
-function topByCountry(proxies: Proxy[]): Proxy[] {
-  const groups = new Map<string, Proxy[]>();
-  for (const p of proxies) {
-    const m = p.name.match(/([A-Z]{2})_\d+/);
-    const code = m ? m[1] : '??';
-    if (!groups.has(code)) groups.set(code, []);
-    groups.get(code)!.push(p);
-  }
-  const result: Proxy[] = [];
-  for (const members of groups.values()) {
-    members.sort((a, b) => parseSpeed(b.name) - parseSpeed(a.name));
-    result.push(...members.slice(0, CURATED_MAX_PER_COUNTRY));
-  }
-  return result;
 }
 
 function dedupCurated(results: FetchResult[]): Proxy[] {
@@ -159,7 +135,7 @@ function dedupCurated(results: FetchResult[]): Proxy[] {
       proxies.push(proxy);
     }
   }
-  return topByCountry(proxies);
+  return proxies;
 }
 
 function dedup(results: FetchResult[]): {

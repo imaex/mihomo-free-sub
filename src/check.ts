@@ -10,7 +10,7 @@ const ROOT = path.resolve(import.meta.dirname, '..');
 const DATA_DIR = path.join(ROOT, 'data');
 const TEMP_DIR = path.join(ROOT, '.check-tmp');
 
-const TIMEOUT = 2000;
+const TIMEOUT = 5000;
 const CONCURRENCY = 100;
 const API_PORT = 19090;
 const API_BASE = `http://127.0.0.1:${API_PORT}`;
@@ -175,6 +175,31 @@ function writeYaml(filePath: string, data: unknown): void {
   fs.writeFileSync(filePath, content, 'utf-8');
 }
 
+const CURATED_MAX_PER_COUNTRY = 15;
+
+function parseSpeed(name: string): number {
+  const m = name.match(/(\d+(?:\.\d+)?)\s*(MB|KB)\/s/);
+  if (!m) return 0;
+  const val = parseFloat(m[1]);
+  return m[2] === 'KB' ? val / 1024 : val;
+}
+
+function topByCountry(proxies: Proxy[]): Proxy[] {
+  const groups = new Map<string, Proxy[]>();
+  for (const p of proxies) {
+    const m = p.name.match(/([A-Z]{2})_\d+/);
+    const code = m ? m[1] : '??';
+    if (!groups.has(code)) groups.set(code, []);
+    groups.get(code)!.push(p);
+  }
+  const result: Proxy[] = [];
+  for (const members of groups.values()) {
+    members.sort((a, b) => parseSpeed(b.name) - parseSpeed(a.name));
+    result.push(...members.slice(0, CURATED_MAX_PER_COUNTRY));
+  }
+  return result;
+}
+
 async function main() {
   const binary = findMihomoBinary();
   console.log(`使用内核: ${binary}`);
@@ -186,6 +211,7 @@ async function main() {
       { name: '全部', file: 'all-raw.yaml' },
       { name: 'ACL4SSR', file: 'acl4ssr-raw.yaml' },
       { name: 'freeSub', file: 'freesub-raw.yaml' },
+      { name: '精选', file: 'curated-raw.yaml' },
     ];
 
     console.log(`\n协议握手测试 (超时 ${TIMEOUT}ms, 并发 ${CONCURRENCY})\n`);
@@ -194,7 +220,12 @@ async function main() {
       const filePath = path.join(DATA_DIR, cat.file);
       const proxies = readYaml<{ proxies: Proxy[] }>(filePath).proxies;
       console.log(`${cat.name}节点 (${proxies.length}):`);
-      const alive = await testBatch(proxies, binary);
+      let alive = await testBatch(proxies, binary);
+      if (cat.file === 'curated-raw.yaml') {
+        const before = alive.length;
+        alive = topByCountry(alive);
+        console.log(`  Top 筛选: ${alive.length}/${before} (每地区最多 ${CURATED_MAX_PER_COUNTRY})`);
+      }
       console.log(`  结果: ${alive.length}/${proxies.length} (${Math.round((alive.length / (proxies.length || 1)) * 100)}%)`);
       writeYaml(filePath, { proxies: alive });
     }
