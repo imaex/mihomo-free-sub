@@ -78,7 +78,7 @@ function normalizeName(proxy: Proxy): void {
 }
 
 function proxyKey(p: Proxy): string {
-  return `${p.type}|${p.server}|${p.port}|${p.name}`;
+  return `${p.type}|${p.server}|${p.port}`;
 }
 
 function dedupCategory(results: FetchResult[], category: string): Proxy[] {

@@ -24,7 +24,20 @@ jobs:
       - name: Fetch and merge sources
         run: npx tsx src/fetch.ts
 
-      - name: TCP connectivity check
+      - name: Download mihomo kernel
+        run: |
+          DOWNLOAD_URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases | \
+            node -e "
+              const data = require('fs').readFileSync('/dev/stdin','utf8');
+              const releases = JSON.parse(data).filter(r => !r.prerelease && !/alpha|beta/i.test(r.tag_name));
+              const asset = releases[0].assets.find(a => a.name.startsWith('mihomo-linux-amd64') && a.name.endsWith('.gz') && !a.name.includes('-go'));
+              console.log(asset.browser_download_url);
+            ")
+          curl -L "$DOWNLOAD_URL" -o mihomo.gz
+          gzip -dc mihomo.gz > mihomo
+          chmod +x mihomo
+
+      - name: Protocol handshake check
         run: npx tsx src/check.ts
 
       - name: Generate output
