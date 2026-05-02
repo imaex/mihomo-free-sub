@@ -106,6 +106,12 @@ function dedupCategory(results: FetchResult[], category: string): Proxy[] {
 }
 
 const CURATED_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getnode']);
+const CURATED_COUNTRIES = new Set(['HK', 'JP', 'US', 'TW', 'SG', 'KR']);
+
+function matchCuratedCountry(name: string): boolean {
+  const m = name.match(/([A-Z]{2})_\d+/);
+  return m ? CURATED_COUNTRIES.has(m[1]) : false;
+}
 
 function dedupCurated(results: FetchResult[]): Proxy[] {
   const seen = new Set<string>();
@@ -116,6 +122,7 @@ function dedupCurated(results: FetchResult[]): Proxy[] {
     if (!CURATED_SOURCES.has(source.name)) continue;
     for (const proxy of config.proxies) {
       normalizeName(proxy);
+      if (!matchCuratedCountry(proxy.name)) continue;
       const key = proxyKey(proxy);
       if (seen.has(key)) continue;
       seen.add(key);

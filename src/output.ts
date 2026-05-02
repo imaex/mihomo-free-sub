@@ -23,6 +23,287 @@ function writeYaml(filePath: string, data: unknown): void {
   fs.writeFileSync(filePath, content, 'utf-8');
 }
 
+// --- sing-box conversion ---
+
+type SingboxOutbound = Record<string, unknown>;
+
+function buildTls(p: Proxy): Record<string, unknown> | undefined {
+  const sni = p.sni || p.servername;
+  const hasTls = p.tls === true || p['reality-opts'] || p.type === 'trojan' || p.type === 'hysteria2' || p.type === 'tuic';
+  if (!hasTls) return undefined;
+
+  const tls: Record<string, unknown> = { enabled: true };
+  if (sni) tls.server_name = sni;
+  if (p['skip-cert-verify']) tls.insecure = true;
+  if (p.alpn) {
+    tls.alpn = Array.isArray(p.alpn) ? p.alpn : [p.alpn];
+  }
+  if (p['client-fingerprint']) {
+    tls.utls = { enabled: true, fingerprint: p['client-fingerprint'] };
+  }
+  const realityOpts = p['reality-opts'] as Record<string, unknown> | undefined;
+  if (realityOpts) {
+    tls.reality = {
+      enabled: true,
+      public_key: realityOpts['public-key'],
+      short_id: realityOpts['short-id'] || '',
+    };
+  }
+  return tls;
+}
+
+function buildTransport(p: Proxy): Record<string, unknown> | undefined {
+  const network = p.network as string | undefined;
+  if (!network || network === 'tcp') return undefined;
+
+  if (network === 'ws') {
+    const wsOpts = (p['ws-opts'] || {}) as Record<string, unknown>;
+    const transport: Record<string, unknown> = { type: 'ws' };
+    if (wsOpts.path) transport.path = wsOpts.path;
+    if (wsOpts.headers) transport.headers = wsOpts.headers;
+    return transport;
+  }
+
+  if (network === 'grpc') {
+    const grpcOpts = (p['grpc-opts'] || {}) as Record<string, unknown>;
+    return { type: 'grpc', service_name: grpcOpts['grpc-service-name'] || '' };
+  }
+
+  if (network === 'h2' || network === 'http') {
+    const opts = (p['h2-opts'] || p['http-opts'] || {}) as Record<string, unknown>;
+    const transport: Record<string, unknown> = { type: 'http' };
+    if (opts.path) transport.path = Array.isArray(opts.path) ? opts.path[0] : opts.path;
+    if (opts.host) transport.host = Array.isArray(opts.host) ? opts.host : [opts.host];
+    return transport;
+  }
+
+  return undefined;
+}
+
+function convertVmess(p: Proxy): SingboxOutbound {
+  const out: SingboxOutbound = {
+    type: 'vmess',
+    tag: p.name,
+    server: p.server,
+    server_port: p.port,
+    uuid: p.uuid,
+    security: p.cipher || 'auto',
+    alter_id: p.alterId || 0,
+  };
+  const tls = buildTls(p);
+  if (tls) out.tls = tls;
+  const transport = buildTransport(p);
+  if (transport) out.transport = transport;
+  return out;
+}
+
+function convertVless(p: Proxy): SingboxOutbound {
+  const out: SingboxOutbound = {
+    type: 'vless',
+    tag: p.name,
+    server: p.server,
+    server_port: p.port,
+    uuid: p.uuid,
+    flow: p.flow || '',
+  };
+  const tls = buildTls(p);
+  if (tls) out.tls = tls;
+  const transport = buildTransport(p);
+  if (transport) out.transport = transport;
+  if (!out.flow) delete out.flow;
+  return out;
+}
+
+function convertSs(p: Proxy): SingboxOutbound {
+  const out: SingboxOutbound = {
+    type: 'shadowsocks',
+    tag: p.name,
+    server: p.server,
+    server_port: p.port,
+    method: p.cipher,
+    password: p.password,
+  };
+  if (p.plugin) {
+    const pluginName = p.plugin === 'obfs' ? 'obfs-local' : String(p.plugin);
+    out.plugin = pluginName;
+    const opts = p['plugin-opts'] as Record<string, unknown> | undefined;
+    if (opts) {
+      const parts: string[] = [];
+      if (pluginName === 'obfs-local') {
+        if (opts.mode) parts.push(`obfs=${opts.mode}`);
+        if (opts.host) parts.push(`obfs-host=${opts.host}`);
+      } else if (pluginName === 'v2ray-plugin') {
+        if (opts.tls) parts.push('tls');
+        if (opts.mode) parts.push(`mode=${opts.mode}`);
+        if (opts.host) parts.push(`host=${opts.host}`);
+        if (opts.path) parts.push(`path=${opts.path}`);
+      }
+      if (parts.length > 0) out.plugin_opts = parts.join(';');
+    }
+  }
+  return out;
+}
+
+function convertTrojan(p: Proxy): SingboxOutbound {
+  const out: SingboxOutbound = {
+    type: 'trojan',
+    tag: p.name,
+    server: p.server,
+    server_port: p.port,
+    password: p.password,
+  };
+  const tls = buildTls(p);
+  if (tls) out.tls = tls;
+  const transport = buildTransport(p);
+  if (transport) out.transport = transport;
+  return out;
+}
+
+function convertHysteria2(p: Proxy): SingboxOutbound {
+  const out: SingboxOutbound = {
+    type: 'hysteria2',
+    tag: p.name,
+    server: p.server,
+    server_port: p.port,
+    password: p.password || p.auth,
+  };
+  if (p.up) out.up_mbps = parseInt(String(p.up), 10) || undefined;
+  if (p.down) out.down_mbps = parseInt(String(p.down), 10) || undefined;
+  if (p['obfs-password']) {
+    out.obfs = { type: 'salamander', password: p['obfs-password'] };
+  }
+  const tls = buildTls(p);
+  if (tls) out.tls = tls;
+  return out;
+}
+
+function convertTuic(p: Proxy): SingboxOutbound {
+  const out: SingboxOutbound = {
+    type: 'tuic',
+    tag: p.name,
+    server: p.server,
+    server_port: p.port,
+    uuid: p.uuid,
+    password: p.password,
+    congestion_control: p['congestion-controller'] || 'bbr',
+  };
+  if (p['udp-relay-mode']) out.udp_relay_mode = p['udp-relay-mode'];
+  if (p['reduce-rtt']) out.reduce_rtt = true;
+  const tls = buildTls(p);
+  if (tls) out.tls = tls;
+  return out;
+}
+
+function convertHttp(p: Proxy): SingboxOutbound {
+  const out: SingboxOutbound = {
+    type: 'http',
+    tag: p.name,
+    server: p.server,
+    server_port: p.port,
+  };
+  if (p.username) out.username = p.username;
+  if (p.password) out.password = p.password;
+  if (p.tls) {
+    out.tls = { enabled: true, server_name: p.sni || p.server };
+  }
+  return out;
+}
+
+function convertSocks5(p: Proxy): SingboxOutbound {
+  const out: SingboxOutbound = {
+    type: 'socks',
+    tag: p.name,
+    server: p.server,
+    server_port: p.port,
+  };
+  if (p.username) out.username = p.username;
+  if (p.password) out.password = p.password;
+  return out;
+}
+
+function convertProxy(p: Proxy): SingboxOutbound | null {
+  switch (p.type) {
+    case 'vmess': return convertVmess(p);
+    case 'vless': return convertVless(p);
+    case 'ss': return convertSs(p);
+    case 'trojan': return convertTrojan(p);
+    case 'hysteria2': return convertHysteria2(p);
+    case 'tuic': return convertTuic(p);
+    case 'http': return convertHttp(p);
+    case 'socks5': return convertSocks5(p);
+    default: return null;
+  }
+}
+
+const COUNTRY_GROUPS: Array<{ tag: string; prefix: string }> = [
+  { tag: '🇭🇰 香港', prefix: 'HK' },
+  { tag: '🇯🇵 日本', prefix: 'JP' },
+  { tag: '🇺🇸 美国', prefix: 'US' },
+  { tag: '🇨🇳 台湾', prefix: 'TW' },
+  { tag: '🇸🇬 新加坡', prefix: 'SG' },
+  { tag: '🇰🇷 韩国', prefix: 'KR' },
+];
+
+function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
+  const outbounds: SingboxOutbound[] = [];
+  const allTags: string[] = [];
+
+  for (const p of proxies) {
+    const converted = convertProxy(p);
+    if (converted) {
+      outbounds.push(converted);
+      allTags.push(converted.tag as string);
+    }
+  }
+
+  const countryGroups: SingboxOutbound[] = [];
+  const groupTags: string[] = [];
+
+  for (const { tag, prefix } of COUNTRY_GROUPS) {
+    const re = new RegExp(`${prefix}_\\d+`);
+    const members = allTags.filter(t => re.test(t));
+    if (members.length === 0) continue;
+    countryGroups.push({
+      type: 'urltest',
+      tag,
+      outbounds: members,
+      url: 'https://www.gstatic.com/generate_204',
+      interval: '5m',
+      tolerance: 50,
+    });
+    groupTags.push(tag);
+  }
+
+  const autoGroup: SingboxOutbound = {
+    type: 'urltest',
+    tag: 'auto',
+    outbounds: allTags,
+    url: 'https://www.gstatic.com/generate_204',
+    interval: '5m',
+    tolerance: 50,
+  };
+
+  const selector: SingboxOutbound = {
+    type: 'selector',
+    tag: 'proxy',
+    outbounds: ['auto', ...groupTags, ...allTags],
+    default: 'auto',
+  };
+
+  return {
+    outbounds: [
+      selector,
+      autoGroup,
+      ...countryGroups,
+      { type: 'direct', tag: 'direct' },
+      { type: 'block', tag: 'block' },
+      ...outbounds,
+    ],
+  };
+}
+
+// --- main ---
+
 function main() {
   const acl4ssrProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'acl4ssr-raw.yaml')).proxies;
   const freesubProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'freesub-raw.yaml')).proxies;
@@ -90,6 +371,20 @@ function main() {
   if (curatedProxies.length > 0) {
     writeYaml(path.join(OUTPUT_DIR, 'curated-nodes.yaml'), { proxies: curatedProxies });
     console.log(`已写入 output/curated-nodes.yaml`);
+  }
+
+  // curated sing-box format
+  if (curatedProxies.length > 0) {
+    const singboxConfig = mihomoToSingbox(curatedProxies);
+    fs.writeFileSync(
+      path.join(OUTPUT_DIR, 'curated-singbox.json'),
+      JSON.stringify(singboxConfig, null, 2),
+      'utf-8',
+    );
+    const proxyCount = (singboxConfig.outbounds as unknown[]).filter(
+      (o: unknown) => !['selector', 'urltest', 'direct', 'block'].includes((o as Record<string, string>).type),
+    ).length;
+    console.log(`已写入 output/curated-singbox.json (${proxyCount} 节点)`);
   }
 
   // all nodes
