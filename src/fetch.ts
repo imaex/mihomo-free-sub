@@ -5,10 +5,9 @@ import yaml from 'js-yaml';
 
 import { sources } from './sources.js';
 import type { FetchResult, ParsedConfig, Proxy, Source } from './types.js';
+import { DATA_DIR, extractCountryCode, writeYaml } from './utils.js';
 
 const TIMEOUT = 30_000;
-const ROOT = path.resolve(import.meta.dirname, '..');
-const DATA_DIR = path.join(ROOT, 'data');
 
 async function fetchSource(source: Source): Promise<FetchResult | null> {
   try {
@@ -81,15 +80,17 @@ function proxyKey(p: Proxy): string {
   return `${p.type}|${p.server}|${p.port}`;
 }
 
-function dedupCategory(results: FetchResult[], category: string): Proxy[] {
+function collectProxies(
+  results: FetchResult[],
+  filter: (source: Source, proxy: Proxy) => boolean,
+): Proxy[] {
   const seen = new Set<string>();
   const proxies: Proxy[] = [];
   const nameCounter = new Map<string, number>();
 
   for (const { source, config } of results) {
-    if (source.category !== category) continue;
     for (const proxy of config.proxies) {
-      normalizeName(proxy);
+      if (!filter(source, proxy)) continue;
       const key = proxyKey(proxy);
       if (seen.has(key)) continue;
       seen.add(key);
@@ -109,33 +110,8 @@ const CURATED_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getn
 const CURATED_COUNTRIES = new Set(['HK', 'JP', 'US', 'TW', 'SG', 'KR']);
 
 function matchCuratedCountry(name: string): boolean {
-  const m = name.match(/([A-Z]{2})_\d+/);
-  return m ? CURATED_COUNTRIES.has(m[1]) : false;
-}
-
-function dedupCurated(results: FetchResult[]): Proxy[] {
-  const seen = new Set<string>();
-  const proxies: Proxy[] = [];
-  const nameCounter = new Map<string, number>();
-
-  for (const { source, config } of results) {
-    if (!CURATED_SOURCES.has(source.name)) continue;
-    for (const proxy of config.proxies) {
-      normalizeName(proxy);
-      if (!matchCuratedCountry(proxy.name)) continue;
-      const key = proxyKey(proxy);
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      const baseName = proxy.name;
-      const count = nameCounter.get(baseName) || 0;
-      if (count > 0) proxy.name = `${baseName}_${count}`;
-      nameCounter.set(baseName, count + 1);
-
-      proxies.push(proxy);
-    }
-  }
-  return proxies;
+  const code = extractCountryCode(name);
+  return code ? CURATED_COUNTRIES.has(code) : false;
 }
 
 function dedup(results: FetchResult[]): {
@@ -146,29 +122,19 @@ function dedup(results: FetchResult[]): {
   templateAcl4ssr: ParsedConfig | null;
   templateFreesub: ParsedConfig | null;
 } {
-  const acl4ssr = dedupCategory(results, 'acl4ssr');
-  const freesub = dedupCategory(results, 'freesub');
-  const curated = dedupCurated(results);
-
-  // all: global dedup across everything
-  const seenAll = new Set<string>();
-  const all: Proxy[] = [];
-  const nameCounter = new Map<string, number>();
+  // normalize all names once upfront
   for (const { config } of results) {
     for (const proxy of config.proxies) {
       normalizeName(proxy);
-      const key = proxyKey(proxy);
-      if (seenAll.has(key)) continue;
-      seenAll.add(key);
-
-      const baseName = proxy.name;
-      const count = nameCounter.get(baseName) || 0;
-      if (count > 0) proxy.name = `${baseName}_${count}`;
-      nameCounter.set(baseName, count + 1);
-
-      all.push(proxy);
     }
   }
+
+  const acl4ssr = collectProxies(results, (s) => s.category === 'acl4ssr');
+  const freesub = collectProxies(results, (s) => s.category === 'freesub');
+  const curated = collectProxies(results, (s, p) =>
+    CURATED_SOURCES.has(s.name) && matchCuratedCountry(p.name),
+  );
+  const all = collectProxies(results, () => true);
 
   let templateAcl4ssr: ParsedConfig | null = null;
   let templateFreesub: ParsedConfig | null = null;
@@ -182,16 +148,6 @@ function dedup(results: FetchResult[]): {
 
 function buildNodesOnly(proxies: Proxy[]): { proxies: Proxy[] } {
   return { proxies };
-}
-
-function writeYaml(filePath: string, data: unknown): void {
-  const content = yaml.dump(data, {
-    lineWidth: -1,
-    noRefs: true,
-    quotingType: '"',
-    forceQuotes: false,
-  });
-  fs.writeFileSync(filePath, content, 'utf-8');
 }
 
 async function main() {

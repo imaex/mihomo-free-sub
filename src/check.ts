@@ -5,9 +5,8 @@ import path from 'node:path';
 import yaml from 'js-yaml';
 
 import type { Proxy } from './types.js';
+import { DATA_DIR, extractCountryCode, readYaml, ROOT, writeYaml } from './utils.js';
 
-const ROOT = path.resolve(import.meta.dirname, '..');
-const DATA_DIR = path.join(ROOT, 'data');
 const TEMP_DIR = path.join(ROOT, '.check-tmp');
 
 const TIMEOUT = 5000;
@@ -28,9 +27,7 @@ function findMihomoBinary(): string {
 }
 
 function ensureTempDir(): void {
-  if (!fs.existsSync(TEMP_DIR)) {
-    fs.mkdirSync(TEMP_DIR, { recursive: true });
-  }
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
 }
 
 function cleanupTempDir(): void {
@@ -39,14 +36,24 @@ function cleanupTempDir(): void {
   }
 }
 
-function buildConfig(proxies: Proxy[]): string {
+function assignUniqueNames(proxies: Proxy[]): { uniqueNames: string[]; indexMap: Map<string, number> } {
   const nameCount = new Map<string, number>();
-  const namedProxies = proxies.map(p => {
-    const count = (nameCount.get(p.name) || 0) + 1;
-    nameCount.set(p.name, count);
-    const uniqueName = count > 1 ? `${p.name}_${count}` : p.name;
-    return { ...p, name: uniqueName };
-  });
+  const uniqueNames: string[] = [];
+  const indexMap = new Map<string, number>();
+
+  for (let i = 0; i < proxies.length; i++) {
+    const count = (nameCount.get(proxies[i].name) || 0) + 1;
+    nameCount.set(proxies[i].name, count);
+    const uniqueName = count > 1 ? `${proxies[i].name}_${count}` : proxies[i].name;
+    uniqueNames.push(uniqueName);
+    indexMap.set(uniqueName, i);
+  }
+
+  return { uniqueNames, indexMap };
+}
+
+function buildConfig(proxies: Proxy[], uniqueNames: string[]): string {
+  const namedProxies = proxies.map((p, i) => ({ ...p, name: uniqueNames[i] }));
 
   const config = {
     'allow-lan': false,
@@ -57,7 +64,7 @@ function buildConfig(proxies: Proxy[]): string {
       {
         name: 'PROXY',
         type: 'select',
-        proxies: namedProxies.map(p => p.name),
+        proxies: uniqueNames,
       },
     ],
     rules: ['MATCH,PROXY'],
@@ -118,20 +125,9 @@ async function testProxy(name: string): Promise<{ name: string; delay: number | 
 async function testBatch(proxies: Proxy[], binary: string): Promise<Proxy[]> {
   if (proxies.length === 0) return [];
 
-  const nameCount = new Map<string, number>();
-  const nameMap = new Map<string, number>(); // uniqueName -> original index
-  const uniqueNames: string[] = [];
+  const { uniqueNames, indexMap } = assignUniqueNames(proxies);
 
-  for (let i = 0; i < proxies.length; i++) {
-    const p = proxies[i];
-    const count = (nameCount.get(p.name) || 0) + 1;
-    nameCount.set(p.name, count);
-    const uniqueName = count > 1 ? `${p.name}_${count}` : p.name;
-    uniqueNames.push(uniqueName);
-    nameMap.set(uniqueName, i);
-  }
-
-  const configContent = buildConfig(proxies);
+  const configContent = buildConfig(proxies, uniqueNames);
   const configPath = path.join(TEMP_DIR, 'config.yaml');
   fs.writeFileSync(configPath, configContent, 'utf-8');
 
@@ -146,7 +142,7 @@ async function testBatch(proxies: Proxy[], binary: string): Promise<Proxy[]> {
       const results = await Promise.all(batch.map(n => testProxy(n)));
       for (const result of results) {
         if (result.delay !== null) {
-          const idx = nameMap.get(result.name);
+          const idx = indexMap.get(result.name);
           if (idx !== undefined) alive.push(proxies[idx]);
         }
       }
@@ -161,20 +157,6 @@ async function testBatch(proxies: Proxy[], binary: string): Promise<Proxy[]> {
   }
 }
 
-function readYaml<T>(filePath: string): T {
-  return yaml.load(fs.readFileSync(filePath, 'utf-8')) as T;
-}
-
-function writeYaml(filePath: string, data: unknown): void {
-  const content = yaml.dump(data, {
-    lineWidth: -1,
-    noRefs: true,
-    quotingType: '"',
-    forceQuotes: false,
-  });
-  fs.writeFileSync(filePath, content, 'utf-8');
-}
-
 const CURATED_MAX_PER_COUNTRY = 15;
 
 function parseSpeed(name: string): number {
@@ -187,8 +169,7 @@ function parseSpeed(name: string): number {
 function topByCountry(proxies: Proxy[]): Proxy[] {
   const groups = new Map<string, Proxy[]>();
   for (const p of proxies) {
-    const m = p.name.match(/([A-Z]{2})_\d+/);
-    const code = m ? m[1] : '??';
+    const code = extractCountryCode(p.name) ?? '??';
     if (!groups.has(code)) groups.set(code, []);
     groups.get(code)!.push(p);
   }

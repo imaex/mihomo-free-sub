@@ -1,27 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import yaml from 'js-yaml';
-
 import type { ParsedConfig, Proxy } from './types.js';
+import { DATA_DIR, readYaml, ROOT, writeYaml } from './utils.js';
 
-const ROOT = path.resolve(import.meta.dirname, '..');
-const DATA_DIR = path.join(ROOT, 'data');
 const OUTPUT_DIR = path.join(ROOT, 'output');
-
-function readYaml<T>(filePath: string): T {
-  return yaml.load(fs.readFileSync(filePath, 'utf-8')) as T;
-}
-
-function writeYaml(filePath: string, data: unknown): void {
-  const content = yaml.dump(data, {
-    lineWidth: -1,
-    noRefs: true,
-    quotingType: '"',
-    forceQuotes: false,
-  });
-  fs.writeFileSync(filePath, content, 'utf-8');
-}
 
 // --- sing-box conversion ---
 
@@ -235,13 +218,13 @@ function convertProxy(p: Proxy): SingboxOutbound | null {
   }
 }
 
-const COUNTRY_GROUPS: Array<{ tag: string; prefix: string }> = [
-  { tag: '🇭🇰 香港', prefix: 'HK' },
-  { tag: '🇯🇵 日本', prefix: 'JP' },
-  { tag: '🇺🇸 美国', prefix: 'US' },
-  { tag: '🇨🇳 台湾', prefix: 'TW' },
-  { tag: '🇸🇬 新加坡', prefix: 'SG' },
-  { tag: '🇰🇷 韩国', prefix: 'KR' },
+const COUNTRY_GROUPS: Array<{ tag: string; prefix: string; re: RegExp }> = [
+  { tag: '🇭🇰 香港', prefix: 'HK', re: /HK_\d+/ },
+  { tag: '🇯🇵 日本', prefix: 'JP', re: /JP_\d+/ },
+  { tag: '🇺🇸 美国', prefix: 'US', re: /US_\d+/ },
+  { tag: '🇨🇳 台湾', prefix: 'TW', re: /TW_\d+/ },
+  { tag: '🇸🇬 新加坡', prefix: 'SG', re: /SG_\d+/ },
+  { tag: '🇰🇷 韩国', prefix: 'KR', re: /KR_\d+/ },
 ];
 
 function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
@@ -259,8 +242,7 @@ function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
   const countryGroups: SingboxOutbound[] = [];
   const groupTags: string[] = [];
 
-  for (const { tag, prefix } of COUNTRY_GROUPS) {
-    const re = new RegExp(`${prefix}_\\d+`);
+  for (const { tag, re } of COUNTRY_GROUPS) {
     const members = allTags.filter(t => re.test(t));
     if (members.length === 0) continue;
     countryGroups.push({
@@ -365,14 +347,15 @@ function main() {
 
   // ACL4SSR full config
   const acl4ssrTemplatePath = path.join(DATA_DIR, 'template-acl4ssr.yaml');
-  if (fs.existsSync(acl4ssrTemplatePath) && acl4ssrProxies.length > 0) {
-    const template = readYaml<ParsedConfig>(acl4ssrTemplatePath);
+  const acl4ssrTemplate = fs.existsSync(acl4ssrTemplatePath) ? readYaml<ParsedConfig>(acl4ssrTemplatePath) : null;
+
+  if (acl4ssrTemplate && acl4ssrProxies.length > 0) {
     writeYaml(path.join(OUTPUT_DIR, 'acl4ssr.yaml'), {
       proxies: acl4ssrProxies,
-      'proxy-groups': template['proxy-groups'],
-      rules: template.rules,
-      'rule-providers': template['rule-providers'],
-      dns: template.dns,
+      'proxy-groups': acl4ssrTemplate['proxy-groups'],
+      rules: acl4ssrTemplate.rules,
+      'rule-providers': acl4ssrTemplate['rule-providers'],
+      dns: acl4ssrTemplate.dns,
     });
     console.log(`已写入 output/acl4ssr.yaml (${acl4ssrProxies.length} 节点)`);
   }
@@ -404,14 +387,13 @@ function main() {
   }
 
   // curated full config (uses acl4ssr template)
-  if (fs.existsSync(acl4ssrTemplatePath) && curatedProxies.length > 0) {
-    const template = readYaml<ParsedConfig>(acl4ssrTemplatePath);
+  if (acl4ssrTemplate && curatedProxies.length > 0) {
     writeYaml(path.join(OUTPUT_DIR, 'curated.yaml'), {
       proxies: curatedProxies,
-      'proxy-groups': template['proxy-groups'],
-      rules: template.rules,
-      'rule-providers': template['rule-providers'],
-      dns: template.dns,
+      'proxy-groups': acl4ssrTemplate['proxy-groups'],
+      rules: acl4ssrTemplate.rules,
+      'rule-providers': acl4ssrTemplate['rule-providers'],
+      dns: acl4ssrTemplate.dns,
     });
     console.log(`已写入 output/curated.yaml (${curatedProxies.length} 节点)`);
   }
@@ -431,7 +413,7 @@ function main() {
       'utf-8',
     );
     const proxyCount = (singboxConfig.outbounds as unknown[]).filter(
-      (o: unknown) => !['selector', 'urltest', 'direct', 'block'].includes((o as Record<string, string>).type),
+      (o: unknown) => !['selector', 'urltest', 'direct', 'block', 'dns'].includes((o as Record<string, string>).type),
     ).length;
     console.log(`已写入 output/curated-singbox.json (${proxyCount} 节点)`);
   }
