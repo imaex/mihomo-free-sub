@@ -107,7 +107,7 @@ function dedupCategory(results: FetchResult[], category: string): Proxy[] {
 
 const CURATED_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getnode']);
 const CURATED_COUNTRIES = new Set(['HK', 'JP', 'US', 'TW', 'SG', 'KR']);
-const CURATED_MAX_PER_COUNTRY = 10;
+const CURATED_MAX_PER_COUNTRY = 15;
 
 function matchCuratedCountry(name: string): boolean {
   const m = name.match(/([A-Z]{2})_\d+/);

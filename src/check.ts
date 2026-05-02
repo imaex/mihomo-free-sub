@@ -186,7 +186,6 @@ async function main() {
       { name: '全部', file: 'all-raw.yaml' },
       { name: 'ACL4SSR', file: 'acl4ssr-raw.yaml' },
       { name: 'freeSub', file: 'freesub-raw.yaml' },
-      { name: '精选', file: 'curated-raw.yaml' },
     ];
 
     console.log(`\n协议握手测试 (超时 ${TIMEOUT}ms, 并发 ${CONCURRENCY})\n`);
