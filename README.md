@@ -6,10 +6,11 @@
 
 | 文件 | 说明 | 订阅链接 |
 |------|------|----------|
-| `acl4ssr.yaml` | ACL4SSR 29 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/main/output/acl4ssr.yaml` |
-| `acl4ssr-nodes.yaml` | ACL4SSR 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/main/output/acl4ssr-nodes.yaml` |
-| `freesub-nodes.yaml` | freeSub 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/main/output/freesub-nodes.yaml` |
-| `all-nodes.yaml` | 全部节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/main/output/all-nodes.yaml` |
+| `acl4ssr.yaml` | ACL4SSR 29 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr.yaml` |
+| `acl4ssr-nodes.yaml` | ACL4SSR 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr-nodes.yaml` |
+| `freesub.yaml` | freeSub 24 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub.yaml` |
+| `freesub-nodes.yaml` | freeSub 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub-nodes.yaml` |
+| `all-nodes.yaml` | 全部节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/all-nodes.yaml` |
 
 ## 源列表
 
@@ -39,5 +40,6 @@ PuddinCat, cn-news, naidounode, v2rayshare, proxypool, chromego, awesome-vpn, V2
 
 1. GitHub Actions 每小时拉取所有源
 2. 按 `server:port` 去重（不只按名字）
-3. 按分类拆分输出
-4. 自动 commit 并 push
+3. TCP 连通性测试（3s 超时），过滤死节点
+4. 按分类拆分输出
+5. 强推到 `sub` 分支（保持干净，仅一个 commit）

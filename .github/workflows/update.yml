@@ -30,14 +30,12 @@ jobs:
       - name: Generate output
         run: npx tsx src/output.ts
 
-      - name: Commit and push
+      - name: Deploy to sub branch
         run: |
+          cd output
+          git init
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add output/ data/
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "$(date -u '+%Y-%m-%d %H:%M') update"
-            git push
-          fi
+          git add -A
+          git commit -m "$(date -u '+%Y-%m-%d %H:%M') update"
+          git push --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" HEAD:sub
