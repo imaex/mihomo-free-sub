@@ -106,7 +106,7 @@ function collectProxies(
   return proxies;
 }
 
-const CURATED_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getnode', 'yahr601']);
+const CURATED_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getnode', 'yahr601', 'NoMoreWalls']);
 const CURATED_COUNTRIES = new Set(['HK', 'JP', 'US', 'TW', 'SG', 'KR']);
 
 function matchCuratedCountry(name: string): boolean {
