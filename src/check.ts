@@ -161,7 +161,7 @@ const COUNTRY_FLAGS: Record<string, string> = {
   HK: '🇭🇰', JP: '🇯🇵', US: '🇺🇸', TW: '🇨🇳', SG: '🇸🇬', KR: '🇰🇷',
 };
 
-const CURATED_LIMITS: Record<string, number> = { HK: 50, US: 50 };
+const CURATED_LIMITS: Record<string, number> = { HK: 100, US: 50 };
 const CURATED_DEFAULT_LIMIT = 20;
 
 function parseSpeed(name: string): number {
