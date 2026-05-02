@@ -34,8 +34,51 @@ async function fetchSource(source: Source): Promise<FetchResult | null> {
   }
 }
 
+const AD_PATTERNS = [
+  /机场推荐[:：]\S+/g,
+  /[Jj]oin[+\s]?[Tt]elegram[:：]?@[\w.-]+/g,
+  /[Tt]elegram[:：]?@[\w.-]+/g,
+  /频道[:：]?\S+/g,
+  /订阅[:：]?\S+/g,
+  /免费节点/g,
+  /[丨|]?[\w.-]+\.(com|de|org|net|me|cc|top|xyz|io)\b/g,
+  /\([^)]*节点[^)]*\)/g,
+  /\([^)]*分享[^)]*\)/g,
+  /\([^)]*推荐[^)]*\)/g,
+];
+
+function normalizeName(proxy: Proxy): void {
+  // dalazhi: remove "op" prefix
+  if (proxy.name.startsWith('op')) {
+    proxy.name = proxy.name.slice(2);
+  }
+  // freeSub: remove "_github.com/Ruk1ng001_"
+  proxy.name = proxy.name.replace(/_github\.com\/Ruk1ng001_/g, '_');
+  // replace 🟢🟡🔴⚪ circle prefix with trailing |优|良|差|未知
+  const circleMap: Record<string, string> = {
+    '\u{1F7E2}': '|优',
+    '\u{1F7E1}': '|良',
+    '\u{1F534}': '|差',
+    '⚪': '|未知',
+  };
+  for (const [circle, suffix] of Object.entries(circleMap)) {
+    if (proxy.name.includes(circle)) {
+      proxy.name = proxy.name.replace(circle, '') + suffix;
+      break;
+    }
+  }
+  // remove 🏳️ (white flag, used with ⚪ for unknown region)
+  proxy.name = proxy.name.replace(/\u{1F3F3}\u{FE0F}?/gu, '');
+  // strip ad/promo text from name (keep the node)
+  for (const pat of AD_PATTERNS) {
+    proxy.name = proxy.name.replace(pat, '');
+  }
+  // clean up leftover whitespace and separators
+  proxy.name = proxy.name.replace(/\s{2,}/g, ' ').replace(/^[\s\-|]+|[\s\-|]+$/g, '').trim();
+}
+
 function proxyKey(p: Proxy): string {
-  return `${p.type}|${p.server}|${p.port}`;
+  return `${p.type}|${p.server}|${p.port}|${p.name}`;
 }
 
 function dedupCategory(results: FetchResult[], category: string): Proxy[] {
@@ -46,6 +89,7 @@ function dedupCategory(results: FetchResult[], category: string): Proxy[] {
   for (const { source, config } of results) {
     if (source.category !== category) continue;
     for (const proxy of config.proxies) {
+      normalizeName(proxy);
       const key = proxyKey(proxy);
       if (seen.has(key)) continue;
       seen.add(key);
@@ -77,6 +121,7 @@ function dedup(results: FetchResult[]): {
   const nameCounter = new Map<string, number>();
   for (const { config } of results) {
     for (const proxy of config.proxies) {
+      normalizeName(proxy);
       const key = proxyKey(proxy);
       if (seenAll.has(key)) continue;
       seenAll.add(key);
