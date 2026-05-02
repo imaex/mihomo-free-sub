@@ -161,9 +161,8 @@ const COUNTRY_FLAGS: Record<string, string> = {
   HK: '🇭🇰', JP: '🇯🇵', US: '🇺🇸', TW: '🇨🇳', SG: '🇸🇬', KR: '🇰🇷',
 };
 
-// TODO: 临时放大到 100，测试完恢复为 HK:50 US:50
-const CURATED_LIMITS: Record<string, number> = { HK: 100, US: 100 };
-const CURATED_DEFAULT_LIMIT = 100;
+const CURATED_LIMITS: Record<string, number> = { HK: 50, US: 50 };
+const CURATED_DEFAULT_LIMIT = 20;
 
 function parseSpeed(name: string): number {
   const m = name.match(/(\d+(?:\.\d+)?)\s*(MB|KB)\/s/);
@@ -206,7 +205,7 @@ function sortScore(name: string): number {
 function extractTags(name: string): string {
   const speed = name.match(/\|⬇?[\d.]+\s*[MK]B\/s/)?.[0] ?? '';
   const mult = parseMultiplier(name);
-  const multStr = mult > 0 ? ` x${mult}` : '';
+  const multStr = mult > 0 ? `|x${mult}` : '';
   const loss = name.match(/\|(\d+)%/);
   const lossStr = loss ? `|${loss[1]}%` : '';
   return `${speed}${multStr}${lossStr}`;
