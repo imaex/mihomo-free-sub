@@ -16,7 +16,7 @@ const API_PORT = 19090;
 const API_BASE = `http://127.0.0.1:${API_PORT}`;
 const TEST_URL = 'http://www.gstatic.com/generate_204';
 
-const TCP_TIMEOUT = 8000;
+const TCP_TIMEOUT = 5000;
 const TCP_CONCURRENCY = 50;
 
 function findMihomoBinary(): string {
