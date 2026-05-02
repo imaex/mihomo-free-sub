@@ -1,7 +1,0 @@
-check-interval: 0
-concurrent: 50
-timeout: 5000
-alive-test-url: http://gstatic.com/generate_204
-min-speed: 0
-rename-node: false
-save-method: local
