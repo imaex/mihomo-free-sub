@@ -4,8 +4,9 @@
   "type": "module",
   "scripts": {
     "fetch": "tsx src/fetch.ts",
+    "check": "tsx src/check.ts",
     "output": "tsx src/output.ts",
-    "run": "tsx src/fetch.ts && tsx src/output.ts"
+    "run": "tsx src/fetch.ts && tsx src/check.ts && tsx src/output.ts"
   },
   "devDependencies": {
     "tsx": "^4.19.0",

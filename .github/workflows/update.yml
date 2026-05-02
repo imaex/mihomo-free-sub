@@ -24,6 +24,9 @@ jobs:
       - name: Fetch and merge sources
         run: npx tsx src/fetch.ts
 
+      - name: TCP connectivity check
+        run: npx tsx src/check.ts
+
       - name: Generate output
         run: npx tsx src/output.ts
 
