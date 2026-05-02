@@ -134,7 +134,8 @@ function isCuratedQualified(name: string): boolean {
   if (mult !== 2 && mult !== 1) return false;
   const lossMatch = name.match(/\|(\d+)%/);
   if (lossMatch && parseInt(lossMatch[1], 10) > 10) return false;
-  if (/\|History/.test(name)) return false;
+  // TODO: 临时放开 History 过滤，测试完恢复
+  // if (/\|History/.test(name)) return false;
   return true;
 }
 
