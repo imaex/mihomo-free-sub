@@ -4,20 +4,18 @@
 
 ## 订阅地址
 
-基础 URL：`https://raw.githubusercontent.com/imaex/free-sub/main/`
-
-| 文件 | 说明 |
+| 说明 | 地址 |
 |------|------|
-| `curated.yaml` | 精选 mihomo 完整配置 |
-| `curated-singbox.json` | 精选 sing-box 格式 |
-| `curated-nodes.yaml` | 精选节点列表 |
-| `acl4ssr.yaml` | ACL4SSR 完整配置 |
-| `acl4ssr-nodes.yaml` | ACL4SSR 节点列表 |
-| `freesub.yaml` | freeSub 完整配置 |
-| `freesub-nodes.yaml` | freeSub 节点列表 |
-| `all-nodes.yaml` | 全部节点列表 |
+| 精选 mihomo 完整配置 | `https://raw.githubusercontent.com/imaex/free-sub/main/curated.yaml` |
+| 精选 sing-box 格式 | `https://raw.githubusercontent.com/imaex/free-sub/main/curated-singbox.json` |
+| 精选节点列表 | `https://raw.githubusercontent.com/imaex/free-sub/main/curated-nodes.yaml` |
+| ACL4SSR 完整配置 | `https://raw.githubusercontent.com/imaex/free-sub/main/acl4ssr.yaml` |
+| ACL4SSR 节点列表 | `https://raw.githubusercontent.com/imaex/free-sub/main/acl4ssr-nodes.yaml` |
+| freeSub 完整配置 | `https://raw.githubusercontent.com/imaex/free-sub/main/freesub.yaml` |
+| freeSub 节点列表 | `https://raw.githubusercontent.com/imaex/free-sub/main/freesub-nodes.yaml` |
+| 全部节点列表 | `https://raw.githubusercontent.com/imaex/free-sub/main/all-nodes.yaml` |
 
-国内加速前缀：`https://gh-proxy.org/` + 上述 URL
+国内加速：将 `https://raw.githubusercontent.com/` 替换为 `https://gh-proxy.org/raw.githubusercontent.com/`
 
 ## 工作方式
 
