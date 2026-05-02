@@ -157,7 +157,7 @@ async function testBatch(proxies: Proxy[], binary: string): Promise<Proxy[]> {
   }
 }
 
-const CURATED_MAX_PER_COUNTRY = 15;
+const CURATED_MAX_PER_COUNTRY = 25;
 
 function parseSpeed(name: string): number {
   const m = name.match(/(\d+(?:\.\d+)?)\s*(MB|KB)\/s/);
@@ -195,23 +195,21 @@ async function main() {
       { name: '精选', file: 'curated-raw.yaml' },
     ];
 
-    console.log(`\n协议握手测试 (超时 ${TIMEOUT}ms, 并发 ${CONCURRENCY})\n`);
+    console.log(`\n跳过测速，仅精选 Top 筛选\n`);
 
     for (const cat of categories) {
       const filePath = path.join(DATA_DIR, cat.file);
-      const proxies = readYaml<{ proxies: Proxy[] }>(filePath).proxies;
+      let proxies = readYaml<{ proxies: Proxy[] }>(filePath).proxies;
       console.log(`${cat.name}节点 (${proxies.length}):`);
-      let alive = await testBatch(proxies, binary);
       if (cat.file === 'curated-raw.yaml') {
-        const before = alive.length;
-        alive = topByCountry(alive);
-        console.log(`  Top 筛选: ${alive.length}/${before} (每地区最多 ${CURATED_MAX_PER_COUNTRY})`);
+        const before = proxies.length;
+        proxies = topByCountry(proxies);
+        console.log(`  Top 筛选: ${proxies.length}/${before} (每地区最多 ${CURATED_MAX_PER_COUNTRY})`);
       }
-      console.log(`  结果: ${alive.length}/${proxies.length} (${Math.round((alive.length / (proxies.length || 1)) * 100)}%)`);
-      writeYaml(filePath, { proxies: alive });
+      writeYaml(filePath, { proxies });
     }
 
-    console.log(`\n已更新 data/ 目录（仅保留存活节点）`);
+    console.log(`\n已更新 data/ 目录`);
   } finally {
     cleanupTempDir();
   }
