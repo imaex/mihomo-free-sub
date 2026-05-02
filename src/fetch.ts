@@ -1,11 +1,12 @@
 import fs from 'node:fs';
+import net from 'node:net';
 import path from 'node:path';
 
 import yaml from 'js-yaml';
 
 import { sources } from './sources.js';
 import type { FetchResult, ParsedConfig, Proxy, Source } from './types.js';
-import { DATA_DIR, extractCountryCode, writeYaml } from './utils.js';
+import { DATA_DIR, extractCountryCode, parseMultiplier, writeYaml } from './utils.js';
 
 const TIMEOUT = 30_000;
 
@@ -80,6 +81,10 @@ function proxyKey(p: Proxy): string {
   return `${p.type}|${p.server}|${p.port}`;
 }
 
+function endpointKey(p: Proxy): string {
+  return `${p.server}|${p.port}`;
+}
+
 function collectProxies(
   results: FetchResult[],
   filter: (source: Source, proxy: Proxy) => boolean,
@@ -115,17 +120,6 @@ function matchCuratedCountry(name: string): boolean {
 }
 
 const USEFUL_TAGS_RE = /\|(?:GPT⁺?|GM|YT)/;
-
-function parseMultiplier(name: string): number {
-  const m = name.match(/[A-Z]{2}([²¹⁰³⁴⁵⁶⁷⁸⁹⁻]+)/);
-  if (!m) return -1;
-  const s = m[1];
-  if (s === '²') return 2;
-  if (s === '¹') return 1;
-  if (s === '⁰') return 0;
-  if (s === '⁻¹') return -1;
-  return -99;
-}
 
 function isCuratedQualified(name: string): boolean {
   const hasSpeed = /\d+(?:\.\d+)?\s*[MK]B\/s/.test(name);
@@ -174,6 +168,61 @@ function buildNodesOnly(proxies: Proxy[]): { proxies: Proxy[] } {
   return { proxies };
 }
 
+const TCP_TIMEOUT = 5000;
+const TCP_CONCURRENCY = 50;
+const TCP_RETRIES = 3;
+
+function tcpCheckOnce(host: string, port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host, port, timeout: TCP_TIMEOUT });
+    socket.once('connect', () => { socket.destroy(); resolve(true); });
+    socket.once('timeout', () => { socket.destroy(); resolve(false); });
+    socket.once('error', () => { socket.destroy(); resolve(false); });
+  });
+}
+
+async function tcpCheck(host: string, port: number): Promise<boolean> {
+  try {
+    return await Promise.any(
+      Array.from({ length: TCP_RETRIES }, () => tcpCheckOnce(host, port)),
+    );
+  } catch {
+    return false;
+  }
+}
+
+async function tcpFilterAll(proxies: Proxy[]): Promise<Set<string>> {
+  const uniqueEndpoints = new Map<string, { host: string; port: number }>();
+  for (const p of proxies) {
+    const key = endpointKey(p);
+    if (!uniqueEndpoints.has(key)) uniqueEndpoints.set(key, { host: p.server, port: p.port });
+  }
+
+  const endpoints = [...uniqueEndpoints.entries()];
+  const aliveSet = new Set<string>();
+  let tested = 0;
+
+  console.log(`\nTCP 连通性测试 (${endpoints.length} 个唯一端点)...`);
+
+  for (let i = 0; i < endpoints.length; i += TCP_CONCURRENCY) {
+    const batch = endpoints.slice(i, i + TCP_CONCURRENCY);
+    const results = await Promise.all(batch.map(async ([key, ep]) => ({ key, ok: await tcpCheck(ep.host, ep.port) })));
+    for (const r of results) {
+      if (r.ok) aliveSet.add(r.key);
+    }
+    tested += batch.length;
+    const pct = Math.round((tested / endpoints.length) * 100);
+    process.stdout.write(`\r  TCP: ${tested}/${endpoints.length} (${pct}%)  存活: ${aliveSet.size}`);
+  }
+  process.stdout.write('\n');
+  console.log(`TCP 连通率: ${aliveSet.size}/${endpoints.length} (${Math.round((aliveSet.size / endpoints.length) * 100)}%)`);
+  return aliveSet;
+}
+
+function filterByAlive(proxies: Proxy[], aliveSet: Set<string>): Proxy[] {
+  return proxies.filter(p => aliveSet.has(endpointKey(p)));
+}
+
 async function main() {
   console.log(`拉取 ${sources.length} 个源...\n`);
 
@@ -187,13 +236,22 @@ async function main() {
 
   console.log(`\n去重后: ACL4SSR ${acl4ssr.length}, freeSub ${freesub.length}, 精选 ${curated.length}, 全部 ${all.length}`);
 
+  const aliveSet = await tcpFilterAll(all);
+
+  const acl4ssrAlive = filterByAlive(acl4ssr, aliveSet);
+  const freesubAlive = filterByAlive(freesub, aliveSet);
+  const curatedAlive = filterByAlive(curated, aliveSet);
+  const allAlive = filterByAlive(all, aliveSet);
+
+  console.log(`\nTCP 过滤后: ACL4SSR ${acl4ssrAlive.length}, freeSub ${freesubAlive.length}, 精选 ${curatedAlive.length}, 全部 ${allAlive.length}`);
+
   // save intermediate data
   fs.mkdirSync(DATA_DIR, { recursive: true });
 
-  writeYaml(path.join(DATA_DIR, 'all-raw.yaml'), buildNodesOnly(all));
-  writeYaml(path.join(DATA_DIR, 'acl4ssr-raw.yaml'), buildNodesOnly(acl4ssr));
-  writeYaml(path.join(DATA_DIR, 'freesub-raw.yaml'), buildNodesOnly(freesub));
-  writeYaml(path.join(DATA_DIR, 'curated-raw.yaml'), buildNodesOnly(curated));
+  writeYaml(path.join(DATA_DIR, 'all-raw.yaml'), buildNodesOnly(allAlive));
+  writeYaml(path.join(DATA_DIR, 'acl4ssr-raw.yaml'), buildNodesOnly(acl4ssrAlive));
+  writeYaml(path.join(DATA_DIR, 'freesub-raw.yaml'), buildNodesOnly(freesubAlive));
+  writeYaml(path.join(DATA_DIR, 'curated-raw.yaml'), buildNodesOnly(curatedAlive));
 
   // save templates
   if (templateAcl4ssr) {
