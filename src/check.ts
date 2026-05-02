@@ -176,19 +176,37 @@ function parseLossRate(name: string): number {
   return m ? parseInt(m[1], 10) : -1;
 }
 
+function parseMultiplier(name: string): number {
+  const m = name.match(/[A-Z]{2}([²¹⁰³⁴⁵⁶⁷⁸⁹⁻]+)/);
+  if (!m) return -1;
+  if (m[1] === '²') return 2;
+  if (m[1] === '¹') return 1;
+  return 0;
+}
+
+function countTags(name: string): number {
+  const tags = name.match(/\|(?:GPT⁺?|GM|YT)/g) ?? [];
+  let score = tags.length;
+  if (name.includes('GPT⁺')) score += 0.5;
+  return score;
+}
+
 function sortScore(name: string): number {
   const speed = parseSpeed(name);
-  if (speed > 0) return 10000 + speed;
+  if (speed > 0) return 100000 + speed;
+  const mult = parseMultiplier(name);
+  const base = mult === 2 ? 20000 : 10000;
   const loss = parseLossRate(name);
-  if (loss >= 0) return 5000 - loss;
-  return 0;
+  const lossScore = loss >= 0 ? (100 - loss) * 10 : 0;
+  const tagScore = countTags(name);
+  return base + lossScore + tagScore;
 }
 
 function extractTags(name: string): string {
   const speed = name.match(/\|⬇?[\d.]+\s*[MK]B\/s/)?.[0] ?? '';
   const loss = name.match(/\|\d+%/)?.[0] ?? '';
-  const mult = name.match(/[²¹⁰³⁴⁵⁶⁷⁸⁹⁻]+/)?.[0] ?? '';
-  const multStr = mult ? `|x${mult}` : '';
+  const mult = parseMultiplier(name);
+  const multStr = mult > 0 ? `|x${mult}` : '';
   return `${speed}${loss}${multStr}`;
 }
 

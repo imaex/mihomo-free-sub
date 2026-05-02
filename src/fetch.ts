@@ -114,14 +114,27 @@ function matchCuratedCountry(name: string): boolean {
   return code ? CURATED_COUNTRIES.has(code) : false;
 }
 
-const USEFUL_TAGS_RE = /\|(?:GPT⁺?|GM|YT|优|良|差|未知)/;
+const USEFUL_TAGS_RE = /\|(?:GPT⁺?|GM|YT)/;
+
+function parseMultiplier(name: string): number {
+  const m = name.match(/[A-Z]{2}([²¹⁰³⁴⁵⁶⁷⁸⁹⁻]+)/);
+  if (!m) return -1;
+  const s = m[1];
+  if (s === '²') return 2;
+  if (s === '¹') return 1;
+  if (s === '⁰') return 0;
+  if (s === '⁻¹') return -1;
+  return -99;
+}
 
 function isCuratedQualified(name: string): boolean {
+  const hasSpeed = /\d+(?:\.\d+)?\s*[MK]B\/s/.test(name);
+  if (hasSpeed) return true;
+  const mult = parseMultiplier(name);
+  if (mult !== 2 && mult !== 1) return false;
   const lossMatch = name.match(/\|(\d+)%/);
   if (lossMatch && parseInt(lossMatch[1], 10) > 10) return false;
-  if (/\|(?:History|Succeed)/.test(name) && !USEFUL_TAGS_RE.test(name)) return false;
-  const hasSpeed = /\d+(?:\.\d+)?\s*[MK]B\/s/.test(name);
-  if (!hasSpeed && !USEFUL_TAGS_RE.test(name) && !lossMatch) return false;
+  if (/\|(?:History|Succeed)/.test(name)) return false;
   return true;
 }
 
