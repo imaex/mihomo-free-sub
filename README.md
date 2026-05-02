@@ -6,21 +6,21 @@
 
 | 文件 | 说明 | 直连 | 加速 |
 |------|------|------|------|
-| `curated.yaml` | 精选 mihomo 29 组 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated.yaml` |
-| `curated-singbox.json` | 精选 sing-box 格式 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-singbox.json` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-singbox.json` |
-| `curated-nodes.yaml` | 精选节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-nodes.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-nodes.yaml` |
-| `acl4ssr.yaml` | ACL4SSR 29 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr.yaml` |
-| `acl4ssr-nodes.yaml` | ACL4SSR 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr-nodes.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr-nodes.yaml` |
-| `freesub.yaml` | freeSub 24 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub.yaml` |
-| `freesub-nodes.yaml` | freeSub 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub-nodes.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub-nodes.yaml` |
-| `all-nodes.yaml` | 全部节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/all-nodes.yaml` | `https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/all-nodes.yaml` |
+| `curated.yaml` | 精选 mihomo 29 组 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated.yaml` | `https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated.yaml` |
+| `curated-singbox.json` | 精选 sing-box 格式 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-singbox.json` | `https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-singbox.json` |
+| `curated-nodes.yaml` | 精选节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-nodes.yaml` | `https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated-nodes.yaml` |
+| `acl4ssr.yaml` | ACL4SSR 29 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr.yaml` | `https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr.yaml` |
+| `acl4ssr-nodes.yaml` | ACL4SSR 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr-nodes.yaml` | `https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr-nodes.yaml` |
+| `freesub.yaml` | freeSub 24 组完整配置 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub.yaml` | `https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub.yaml` |
+| `freesub-nodes.yaml` | freeSub 源节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub-nodes.yaml` | `https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub-nodes.yaml` |
+| `all-nodes.yaml` | 全部节点列表 | `https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/all-nodes.yaml` | `https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/all-nodes.yaml` |
 
 ## 快速订阅
 
 ```bash
-mihomo sub add "https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated.yaml" best1
-mihomo sub add "https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr.yaml" best2
-mihomo sub add "https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub.yaml" best3
+mihomo sub add "https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/curated.yaml" best1
+mihomo sub add "https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/acl4ssr.yaml" best2
+mihomo sub add "https://gh-proxy.org/raw.githubusercontent.com/imaex/mihomo-free-sub/sub/freesub.yaml" best3
 ```
 
 ## 源列表
