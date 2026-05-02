@@ -421,9 +421,6 @@ function main() {
   // all nodes
   writeYaml(path.join(OUTPUT_DIR, 'all-nodes.yaml'), { proxies: allProxies });
   console.log(`已写入 output/all-nodes.yaml (${allProxies.length} 节点)`);
-
-  // timestamp
-  fs.writeFileSync(path.join(OUTPUT_DIR, 'updated.txt'), new Date().toISOString(), 'utf-8');
 }
 
 main();

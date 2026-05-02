@@ -171,6 +171,7 @@ function buildNodesOnly(proxies: Proxy[]): { proxies: Proxy[] } {
 const TCP_TIMEOUT = 5000;
 const TCP_CONCURRENCY = 50;
 const TCP_RETRIES = 3;
+const TCP_RETRY_DELAY = 3000;
 
 function tcpCheckOnce(host: string, port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -181,14 +182,21 @@ function tcpCheckOnce(host: string, port: number): Promise<boolean> {
   });
 }
 
-async function tcpCheck(host: string, port: number): Promise<boolean> {
-  try {
-    return await Promise.any(
-      Array.from({ length: TCP_RETRIES }, () => tcpCheckOnce(host, port)),
-    );
-  } catch {
-    return false;
+async function tcpBatch(endpoints: [string, { host: string; port: number }][]): Promise<Set<string>> {
+  const aliveSet = new Set<string>();
+  let tested = 0;
+  for (let i = 0; i < endpoints.length; i += TCP_CONCURRENCY) {
+    const batch = endpoints.slice(i, i + TCP_CONCURRENCY);
+    const results = await Promise.all(batch.map(async ([key, ep]) => ({ key, ok: await tcpCheckOnce(ep.host, ep.port) })));
+    for (const r of results) {
+      if (r.ok) aliveSet.add(r.key);
+    }
+    tested += batch.length;
+    const pct = Math.round((tested / endpoints.length) * 100);
+    process.stdout.write(`\r    ${tested}/${endpoints.length} (${pct}%)  存活: ${aliveSet.size}`);
   }
+  process.stdout.write('\n');
+  return aliveSet;
 }
 
 async function tcpFilterAll(proxies: Proxy[]): Promise<Set<string>> {
@@ -198,24 +206,25 @@ async function tcpFilterAll(proxies: Proxy[]): Promise<Set<string>> {
     if (!uniqueEndpoints.has(key)) uniqueEndpoints.set(key, { host: p.server, port: p.port });
   }
 
-  const endpoints = [...uniqueEndpoints.entries()];
+  const allEndpoints = [...uniqueEndpoints.entries()];
   const aliveSet = new Set<string>();
-  let tested = 0;
+  let remaining = allEndpoints;
 
-  console.log(`\nTCP 连通性测试 (${endpoints.length} 个唯一端点)...`);
+  console.log(`\nTCP 连通性测试 (${allEndpoints.length} 个唯一端点, ${TCP_RETRIES} 轮)...`);
 
-  for (let i = 0; i < endpoints.length; i += TCP_CONCURRENCY) {
-    const batch = endpoints.slice(i, i + TCP_CONCURRENCY);
-    const results = await Promise.all(batch.map(async ([key, ep]) => ({ key, ok: await tcpCheck(ep.host, ep.port) })));
-    for (const r of results) {
-      if (r.ok) aliveSet.add(r.key);
+  for (let round = 1; round <= TCP_RETRIES; round++) {
+    if (remaining.length === 0) break;
+    if (round > 1) {
+      console.log(`  等待 ${TCP_RETRY_DELAY / 1000}s 后重试...`);
+      await new Promise(r => setTimeout(r, TCP_RETRY_DELAY));
     }
-    tested += batch.length;
-    const pct = Math.round((tested / endpoints.length) * 100);
-    process.stdout.write(`\r  TCP: ${tested}/${endpoints.length} (${pct}%)  存活: ${aliveSet.size}`);
+    console.log(`  第 ${round} 轮 (${remaining.length} 个端点):`);
+    const roundAlive = await tcpBatch(remaining);
+    for (const key of roundAlive) aliveSet.add(key);
+    remaining = remaining.filter(([key]) => !roundAlive.has(key));
   }
-  process.stdout.write('\n');
-  console.log(`TCP 连通率: ${aliveSet.size}/${endpoints.length} (${Math.round((aliveSet.size / endpoints.length) * 100)}%)`);
+
+  console.log(`TCP 连通率: ${aliveSet.size}/${allEndpoints.length} (${Math.round((aliveSet.size / allEndpoints.length) * 100)}%)`);
   return aliveSet;
 }
 

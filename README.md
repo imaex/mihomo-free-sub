@@ -6,14 +6,14 @@ Free Mihomo/Clash/sing-box subscription aggregator, updated hourly.
 
 | Description | URL |
 |-------------|-----|
-| Curated mihomo config | `https://raw.githubusercontent.com/imaex/free-sub/main/curated.yaml` |
-| Curated sing-box config | `https://raw.githubusercontent.com/imaex/free-sub/main/curated-singbox.json` |
-| Curated nodes only | `https://raw.githubusercontent.com/imaex/free-sub/main/curated-nodes.yaml` |
-| ACL4SSR config | `https://raw.githubusercontent.com/imaex/free-sub/main/acl4ssr.yaml` |
-| ACL4SSR nodes only | `https://raw.githubusercontent.com/imaex/free-sub/main/acl4ssr-nodes.yaml` |
-| freeSub config | `https://raw.githubusercontent.com/imaex/free-sub/main/freesub.yaml` |
-| freeSub nodes only | `https://raw.githubusercontent.com/imaex/free-sub/main/freesub-nodes.yaml` |
-| All nodes | `https://raw.githubusercontent.com/imaex/free-sub/main/all-nodes.yaml` |
+| Curated mihomo config | `https://raw.githubusercontent.com/imaex/free-sub/sub/curated.yaml` |
+| Curated sing-box config | `https://raw.githubusercontent.com/imaex/free-sub/sub/curated-singbox.json` |
+| Curated nodes only | `https://raw.githubusercontent.com/imaex/free-sub/sub/curated-nodes.yaml` |
+| ACL4SSR config | `https://raw.githubusercontent.com/imaex/free-sub/sub/acl4ssr.yaml` |
+| ACL4SSR nodes only | `https://raw.githubusercontent.com/imaex/free-sub/sub/acl4ssr-nodes.yaml` |
+| FreeSub config | `https://raw.githubusercontent.com/imaex/free-sub/sub/freesub.yaml` |
+| FreeSub nodes only | `https://raw.githubusercontent.com/imaex/free-sub/sub/freesub-nodes.yaml` |
+| All nodes | `https://raw.githubusercontent.com/imaex/free-sub/sub/all-nodes.yaml` |
 
 CN mirror: replace `https://raw.githubusercontent.com/` with `https://gh-proxy.org/raw.githubusercontent.com/`
 
@@ -22,4 +22,4 @@ CN mirror: replace `https://raw.githubusercontent.com/` with `https://gh-proxy.o
 1. Fetch 25 sources hourly, normalize node names, deduplicate by `type|server|port`
 2. TCP connectivity test (5s timeout, 3 retries) to filter dead nodes
 3. Curated category sorted by speed / multiplier / loss rate, top-N per country (HK 100, US 50, others 20)
-4. Generate full configs, node lists and sing-box format, push to main branch
+4. Generate full configs, node lists and sing-box format, push to sub branch
