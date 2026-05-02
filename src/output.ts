@@ -268,7 +268,7 @@ function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
       tag,
       outbounds: members,
       url: 'https://www.gstatic.com/generate_204',
-      interval: '5m',
+      interval: '3m',
       tolerance: 50,
     });
     groupTags.push(tag);
@@ -279,26 +279,63 @@ function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
     tag: 'auto',
     outbounds: allTags,
     url: 'https://www.gstatic.com/generate_204',
-    interval: '5m',
+    interval: '3m',
     tolerance: 50,
   };
 
   const selector: SingboxOutbound = {
     type: 'selector',
     tag: 'proxy',
-    outbounds: ['auto', ...groupTags, ...allTags],
+    outbounds: ['auto', ...groupTags, ...allTags, 'direct'],
     default: 'auto',
   };
 
   return {
+    log: { level: 'error', timestamp: true },
+    experimental: {
+      cache_file: { enabled: true, path: 'cache.db', store_fakeip: true },
+    },
+    dns: {
+      servers: [
+        { tag: 'remote', address: 'https://1.1.1.1/dns-query', detour: 'proxy' },
+        { tag: 'local', address: '119.29.29.29', detour: 'direct' },
+        { tag: 'block', address: 'rcode://success' },
+      ],
+      rules: [
+        { outbound: 'any', server: 'local' },
+        { geosite: 'cn', server: 'local' },
+        { geosite: 'cn', invert: true, server: 'remote' },
+      ],
+      strategy: 'ipv4_only',
+      final: 'remote',
+    },
+    inbounds: [
+      {
+        type: 'tun',
+        inet4_address: '172.19.0.1/30',
+        auto_route: true,
+        strict_route: false,
+        sniff: true,
+      },
+    ],
     outbounds: [
       selector,
       autoGroup,
       ...countryGroups,
       { type: 'direct', tag: 'direct' },
       { type: 'block', tag: 'block' },
+      { type: 'dns', tag: 'dns-out' },
       ...outbounds,
     ],
+    route: {
+      rules: [
+        { protocol: 'dns', outbound: 'dns-out' },
+        { geosite: 'cn', geoip: ['cn', 'private'], outbound: 'direct' },
+        { geosite: ['category-ads-all'], outbound: 'block' },
+      ],
+      auto_detect_interface: true,
+      final: 'proxy',
+    },
   };
 }
 
