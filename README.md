@@ -30,28 +30,28 @@ mihomo sub add "https://gh-proxy.org/https://raw.githubusercontent.com/imaex/mih
 
 | 名称 | 仓库 | 特点 |
 |------|------|------|
-| FreeSubsCheck | [kooker/FreeSubsCheck](https://github.com/kooker/FreeSubsCheck) | 测速 + GPT 等功能标签，节点名 `🇯🇵JP_1\|1.7MB/s` |
-| shaoyouvip | [shaoyouvip/free](https://github.com/shaoyouvip/free) | 测速，节点名 `🇸🇬SG_1\|2.6MB/s` |
-| dalazhi | [dalazhi/v2ray](https://github.com/dalazhi/v2ray) | 测速，节点名 `🇻🇳VN_1\|1.2MB/s` |
-| getnode | [limitless-d/getnode](https://github.com/limitless-d/getnode) | 测速，节点名 `🇰🇷KR_1\|2.9MB/s` |
+| FreeSubsCheck | [kooker/FreeSubsCheck](https://github.com/kooker/FreeSubsCheck) | 测速 + 功能标签，如 `🇯🇵JP_1\|1.7MB/s`、`🇺🇸US_2\|845KB/s\|GPT` |
+| shaoyouvip | [shaoyouvip/free](https://github.com/shaoyouvip/free) | 测速，如 `🇸🇬SG_1\|2.6MB/s`、`🇳🇱NL_3\|1.6MB/s` |
+| dalazhi | [dalazhi/v2ray](https://github.com/dalazhi/v2ray) | 测速，如 `🇭🇰HK_4\|8.2MB/s`、`🇻🇳VN_1\|1.2MB/s` |
+| getnode | [limitless-d/getnode](https://github.com/limitless-d/getnode) | 测速，如 `🇰🇷KR_1\|2.9MB/s`、`🇿🇦ZA_1\|2.9MB/s` |
 
 ### ACL4SSR 29 组（全部源）
 
 | 名称 | 仓库 | 特点 |
 |------|------|------|
-| FreeSubsCheck | [kooker/FreeSubsCheck](https://github.com/kooker/FreeSubsCheck) | 测速 + 功能标签 |
-| yahr601 | [yahr601-prog/1](https://github.com/yahr601-prog/1) | 倍率 + 功能标签，节点名 `🇺🇸US²_1\|0%\|GPT⁺\|History` |
-| Auto-Sync | [walke2019/Auto-Sync](https://github.com/walke2019/Auto-Sync) | 聚合源，节点多但含 freeSub 节点，无自身测速 |
+| FreeSubsCheck | [kooker/FreeSubsCheck](https://github.com/kooker/FreeSubsCheck) | 测速 + 功能标签，如 `🇯🇵JP_1\|1.7MB/s`、`🇺🇸US_2\|845KB/s\|GPT` |
+| yahr601 | [yahr601-prog/1](https://github.com/yahr601-prog/1) | 倍率 + 功能标签，如 `🇺🇸US²_1\|0%\|GPT⁺\|GM\|YT`、`🇭🇰HK¹-LV⁰_1` |
+| Auto-Sync | [walke2019/Auto-Sync](https://github.com/walke2019/Auto-Sync) | 聚合源（含 freeSub 节点），节点多但无自身测速 |
 | ssrsub | [ssrsub/ssr](https://github.com/ssrsub/ssr) | 纯节点，无测速/标签 |
-| shaoyouvip | [shaoyouvip/free](https://github.com/shaoyouvip/free) | 测速 |
-| dalazhi | [dalazhi/v2ray](https://github.com/dalazhi/v2ray) | 测速 |
-| getnode | [limitless-d/getnode](https://github.com/limitless-d/getnode) | 测速 |
+| shaoyouvip | [shaoyouvip/free](https://github.com/shaoyouvip/free) | 测速，如 `🇸🇬SG_1\|2.6MB/s`、`🇳🇱NL_3\|1.6MB/s` |
+| dalazhi | [dalazhi/v2ray](https://github.com/dalazhi/v2ray) | 测速，如 `🇭🇰HK_4\|8.2MB/s`、`🇻🇳VN_1\|1.2MB/s` |
+| getnode | [limitless-d/getnode](https://github.com/limitless-d/getnode) | 测速，如 `🇰🇷KR_1\|2.9MB/s`、`🇿🇦ZA_1\|2.9MB/s` |
 
 ### freeSub 24 组
 
 | 名称 | 仓库 | 特点 |
 |------|------|------|
-| freeSub | [Ruk1ng001/freeSub](https://github.com/Ruk1ng001/freeSub) | 质量标记(优/良/差) + 解锁标签(🎬🤖📺🔍)，节点名 `🇭🇰[🎬🤖📺🔍]_hash\|优` |
+| freeSub | [Ruk1ng001/freeSub](https://github.com/Ruk1ng001/freeSub) | 质量标记 + 解锁标签，如 `🇭🇰[🎬🤖📺🔍]_ad073b21\|优`、`🇸🇬[🎬📺🔍]_45a08a51\|差` |
 
 ### 其他源（纯节点，无分组模板）
 
