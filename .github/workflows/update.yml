@@ -1,0 +1,40 @@
+name: Update Subscriptions
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch and merge sources
+        run: npx tsx src/fetch.ts
+
+      - name: Generate output
+        run: npx tsx src/output.ts
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add output/ data/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "$(date -u '+%Y-%m-%d %H:%M') update"
+            git push
+          fi

@@ -1,0 +1,17 @@
+{
+  "name": "mihomo-free-sub",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "fetch": "tsx src/fetch.ts",
+    "output": "tsx src/output.ts",
+    "run": "tsx src/fetch.ts && tsx src/output.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}
