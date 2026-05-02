@@ -293,28 +293,31 @@ function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
   return {
     log: { level: 'error', timestamp: true },
     experimental: {
-      cache_file: { enabled: true, path: 'cache.db', store_fakeip: true },
+      cache_file: { enabled: true, path: 'cache.db', store_fakeip: true, store_rdrc: true },
     },
     dns: {
       servers: [
-        { tag: 'remote', address: 'https://1.1.1.1/dns-query', detour: 'proxy' },
-        { tag: 'local', address: '119.29.29.29', detour: 'direct' },
-        { tag: 'block', address: 'rcode://success' },
+        { tag: 'dns_proxy', address: 'https://1.1.1.1/dns-query', address_resolver: 'dns_resolver', strategy: 'ipv4_only', detour: 'proxy' },
+        { tag: 'dns_direct', address: 'https://dns.alidns.com/dns-query', address_resolver: 'dns_resolver', strategy: 'ipv4_only', detour: 'direct' },
+        { tag: 'dns_resolver', address: '223.5.5.5', detour: 'direct' },
+        { tag: 'dns_block', address: 'rcode://success' },
       ],
       rules: [
-        { outbound: 'any', server: 'local' },
-        { geosite: 'cn', server: 'local' },
-        { geosite: 'cn', invert: true, server: 'remote' },
+        { outbound: 'any', server: 'dns_resolver' },
+        { rule_set: 'geosite-cn', server: 'dns_direct' },
+        { rule_set: 'geosite-geolocation-!cn', server: 'dns_proxy' },
       ],
-      strategy: 'ipv4_only',
-      final: 'remote',
+      final: 'dns_direct',
+      independent_cache: true,
     },
     inbounds: [
       {
         type: 'tun',
+        tag: 'tun-in',
         inet4_address: '172.19.0.1/30',
         auto_route: true,
-        strict_route: false,
+        strict_route: true,
+        stack: 'system',
         sniff: true,
       },
     ],
@@ -330,8 +333,17 @@ function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
     route: {
       rules: [
         { protocol: 'dns', outbound: 'dns-out' },
-        { geosite: 'cn', geoip: ['cn', 'private'], outbound: 'direct' },
-        { geosite: ['category-ads-all'], outbound: 'block' },
+        { ip_is_private: true, outbound: 'direct' },
+        { rule_set: 'geosite-category-ads-all', outbound: 'block' },
+        { rule_set: 'geosite-cn', outbound: 'direct' },
+        { rule_set: 'geoip-cn', outbound: 'direct' },
+        { rule_set: 'geosite-geolocation-!cn', outbound: 'proxy' },
+      ],
+      rule_set: [
+        { tag: 'geosite-cn', type: 'remote', format: 'binary', url: 'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-cn.srs', download_detour: 'direct' },
+        { tag: 'geosite-geolocation-!cn', type: 'remote', format: 'binary', url: 'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-geolocation-!cn.srs', download_detour: 'direct' },
+        { tag: 'geosite-category-ads-all', type: 'remote', format: 'binary', url: 'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-category-ads-all.srs', download_detour: 'direct' },
+        { tag: 'geoip-cn', type: 'remote', format: 'binary', url: 'https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-cn.srs', download_detour: 'direct' },
       ],
       auto_detect_interface: true,
       final: 'proxy',
