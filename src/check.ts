@@ -157,6 +157,10 @@ async function testBatch(proxies: Proxy[], binary: string): Promise<Proxy[]> {
   }
 }
 
+const COUNTRY_FLAGS: Record<string, string> = {
+  HK: '🇭🇰', JP: '🇯🇵', US: '🇺🇸', TW: '🇨🇳', SG: '🇸🇬', KR: '🇰🇷',
+};
+
 const CURATED_LIMITS: Record<string, number> = { HK: 20, TW: 20 };
 const CURATED_DEFAULT_LIMIT = 15;
 
@@ -182,7 +186,8 @@ function topByCountry(proxies: Proxy[]): Proxy[] {
     for (let i = 0; i < top.length; i++) {
       const speed = top[i].name.match(/\|[\d.]+\s*[MK]B\/s/)?.[0] ?? '';
       const tags = top[i].name.match(/\|(?:GPT|GM|YT|优|良|差|未知)(?:\+)?/g) ?? [];
-      top[i].name = `${code}_${i + 1}${speed}${tags.join('')}`;
+      const flag = COUNTRY_FLAGS[code] ?? '';
+      top[i].name = `${flag}${code}_${i + 1}${speed}${tags.join('')}`;
     }
     result.push(...top);
   }
