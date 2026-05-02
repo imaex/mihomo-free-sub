@@ -26,9 +26,10 @@ function writeYaml(filePath: string, data: unknown): void {
 function main() {
   const acl4ssrProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'acl4ssr-raw.yaml')).proxies;
   const freesubProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'freesub-raw.yaml')).proxies;
+  const curatedProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'curated-raw.yaml')).proxies;
   const allProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'all-raw.yaml')).proxies;
 
-  console.log(`ACL4SSR: ${acl4ssrProxies.length}, freeSub: ${freesubProxies.length}, 全部: ${allProxies.length}`);
+  console.log(`ACL4SSR: ${acl4ssrProxies.length}, freeSub: ${freesubProxies.length}, 精选: ${curatedProxies.length}, 全部: ${allProxies.length}`);
 
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
@@ -70,6 +71,25 @@ function main() {
   if (freesubProxies.length > 0) {
     writeYaml(path.join(OUTPUT_DIR, 'freesub-nodes.yaml'), { proxies: freesubProxies });
     console.log(`已写入 output/freesub-nodes.yaml`);
+  }
+
+  // curated full config (uses acl4ssr template)
+  if (fs.existsSync(acl4ssrTemplatePath) && curatedProxies.length > 0) {
+    const template = readYaml<ParsedConfig>(acl4ssrTemplatePath);
+    writeYaml(path.join(OUTPUT_DIR, 'curated.yaml'), {
+      proxies: curatedProxies,
+      'proxy-groups': template['proxy-groups'],
+      rules: template.rules,
+      'rule-providers': template['rule-providers'],
+      dns: template.dns,
+    });
+    console.log(`已写入 output/curated.yaml (${curatedProxies.length} 节点)`);
+  }
+
+  // curated nodes only
+  if (curatedProxies.length > 0) {
+    writeYaml(path.join(OUTPUT_DIR, 'curated-nodes.yaml'), { proxies: curatedProxies });
+    console.log(`已写入 output/curated-nodes.yaml`);
   }
 
   // all nodes

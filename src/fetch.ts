@@ -105,15 +105,43 @@ function dedupCategory(results: FetchResult[], category: string): Proxy[] {
   return proxies;
 }
 
+const CURATED_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getnode']);
+
+function dedupCurated(results: FetchResult[]): Proxy[] {
+  const seen = new Set<string>();
+  const proxies: Proxy[] = [];
+  const nameCounter = new Map<string, number>();
+
+  for (const { source, config } of results) {
+    if (!CURATED_SOURCES.has(source.name)) continue;
+    for (const proxy of config.proxies) {
+      normalizeName(proxy);
+      const key = proxyKey(proxy);
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const baseName = proxy.name;
+      const count = nameCounter.get(baseName) || 0;
+      if (count > 0) proxy.name = `${baseName}_${count}`;
+      nameCounter.set(baseName, count + 1);
+
+      proxies.push(proxy);
+    }
+  }
+  return proxies;
+}
+
 function dedup(results: FetchResult[]): {
   acl4ssr: Proxy[];
   freesub: Proxy[];
+  curated: Proxy[];
   all: Proxy[];
   templateAcl4ssr: ParsedConfig | null;
   templateFreesub: ParsedConfig | null;
 } {
   const acl4ssr = dedupCategory(results, 'acl4ssr');
   const freesub = dedupCategory(results, 'freesub');
+  const curated = dedupCurated(results);
 
   // all: global dedup across everything
   const seenAll = new Set<string>();
@@ -142,7 +170,7 @@ function dedup(results: FetchResult[]): {
     if (source.category === 'freesub' && !templateFreesub) templateFreesub = config;
   }
 
-  return { acl4ssr, freesub, all, templateAcl4ssr, templateFreesub };
+  return { acl4ssr, freesub, curated, all, templateAcl4ssr, templateFreesub };
 }
 
 function buildNodesOnly(proxies: Proxy[]): { proxies: Proxy[] } {
@@ -168,9 +196,9 @@ async function main() {
 
   console.log(`\n成功 ${results.length}/${sources.length} 个源`);
 
-  const { acl4ssr, freesub, all, templateAcl4ssr, templateFreesub } = dedup(results);
+  const { acl4ssr, freesub, curated, all, templateAcl4ssr, templateFreesub } = dedup(results);
 
-  console.log(`\n去重后: ACL4SSR ${acl4ssr.length}, freeSub ${freesub.length}, 全部 ${all.length}`);
+  console.log(`\n去重后: ACL4SSR ${acl4ssr.length}, freeSub ${freesub.length}, 精选 ${curated.length}, 全部 ${all.length}`);
 
   // save intermediate data
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -178,6 +206,7 @@ async function main() {
   writeYaml(path.join(DATA_DIR, 'all-raw.yaml'), buildNodesOnly(all));
   writeYaml(path.join(DATA_DIR, 'acl4ssr-raw.yaml'), buildNodesOnly(acl4ssr));
   writeYaml(path.join(DATA_DIR, 'freesub-raw.yaml'), buildNodesOnly(freesub));
+  writeYaml(path.join(DATA_DIR, 'curated-raw.yaml'), buildNodesOnly(curated));
 
   // save templates
   if (templateAcl4ssr) {

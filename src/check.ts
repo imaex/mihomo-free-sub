@@ -60,6 +60,7 @@ async function main() {
   const allProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'all-raw.yaml')).proxies;
   const acl4ssrProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'acl4ssr-raw.yaml')).proxies;
   const freesubProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'freesub-raw.yaml')).proxies;
+  const curatedProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'curated-raw.yaml')).proxies;
 
   console.log(`TCP 连通性测试 (超时 ${TIMEOUT}ms, 并发 ${CONCURRENCY})\n`);
 
@@ -72,15 +73,20 @@ async function main() {
   console.log(`freeSub 节点 (${freesubProxies.length}):`);
   const freesubAlive = await checkBatch(freesubProxies, CONCURRENCY);
 
+  console.log(`精选节点 (${curatedProxies.length}):`);
+  const curatedAlive = await checkBatch(curatedProxies, CONCURRENCY);
+
   console.log(`\n结果:`);
   console.log(`  全部: ${allAlive.length}/${allProxies.length} (${Math.round(allAlive.length / allProxies.length * 100)}%)`);
   console.log(`  ACL4SSR: ${acl4ssrAlive.length}/${acl4ssrProxies.length} (${Math.round(acl4ssrAlive.length / acl4ssrProxies.length * 100)}%)`);
   console.log(`  freeSub: ${freesubAlive.length}/${freesubProxies.length} (${Math.round(freesubAlive.length / freesubProxies.length * 100)}%)`);
+  console.log(`  精选: ${curatedAlive.length}/${curatedProxies.length} (${Math.round(curatedAlive.length / curatedProxies.length * 100)}%)`);
 
   // overwrite raw files with alive-only
   writeYaml(path.join(DATA_DIR, 'all-raw.yaml'), { proxies: allAlive });
   writeYaml(path.join(DATA_DIR, 'acl4ssr-raw.yaml'), { proxies: acl4ssrAlive });
   writeYaml(path.join(DATA_DIR, 'freesub-raw.yaml'), { proxies: freesubAlive });
+  writeYaml(path.join(DATA_DIR, 'curated-raw.yaml'), { proxies: curatedAlive });
 
   console.log(`\n已更新 data/ 目录（仅保留存活节点）`);
 }
