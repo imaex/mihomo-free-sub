@@ -279,14 +279,14 @@ async function main() {
       { name: '精选', file: 'curated-raw.yaml' },
     ];
 
-    console.log(`\nTCP 连通性测试 + 精选 Top 筛选\n`);
+    console.log(`\nTCP 连通性测试\n`);
 
     for (const cat of categories) {
       const filePath = path.join(DATA_DIR, cat.file);
       let proxies = readYaml<{ proxies: Proxy[] }>(filePath).proxies;
       console.log(`${cat.name}节点 (${proxies.length}):`);
+      proxies = await tcpFilter(proxies);
       if (cat.file === 'curated-raw.yaml') {
-        proxies = await tcpFilter(proxies);
         const before = proxies.length;
         proxies = topByCountry(proxies);
         console.log(`  Top 筛选: ${proxies.length}/${before}`);
