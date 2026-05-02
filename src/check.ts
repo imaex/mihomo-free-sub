@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
+import net from 'node:net';
 import path from 'node:path';
 
 import yaml from 'js-yaml';
@@ -14,6 +15,9 @@ const CONCURRENCY = 100;
 const API_PORT = 19090;
 const API_BASE = `http://127.0.0.1:${API_PORT}`;
 const TEST_URL = 'http://www.gstatic.com/generate_204';
+
+const TCP_TIMEOUT = 8000;
+const TCP_CONCURRENCY = 50;
 
 function findMihomoBinary(): string {
   const candidates = [
@@ -211,6 +215,34 @@ function extractTags(name: string): string {
   return `${speed}${multStr}${lossStr}`;
 }
 
+function tcpCheck(proxy: Proxy): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = net.createConnection({ host: proxy.server, port: proxy.port, timeout: TCP_TIMEOUT });
+    socket.once('connect', () => { socket.destroy(); resolve(true); });
+    socket.once('timeout', () => { socket.destroy(); resolve(false); });
+    socket.once('error', () => { socket.destroy(); resolve(false); });
+  });
+}
+
+async function tcpFilter(proxies: Proxy[]): Promise<Proxy[]> {
+  const alive: Proxy[] = [];
+  let tested = 0;
+
+  for (let i = 0; i < proxies.length; i += TCP_CONCURRENCY) {
+    const batch = proxies.slice(i, i + TCP_CONCURRENCY);
+    const results = await Promise.all(batch.map(async (p) => ({ proxy: p, ok: await tcpCheck(p) })));
+    for (const r of results) {
+      if (r.ok) alive.push(r.proxy);
+    }
+    tested += batch.length;
+    const pct = Math.round((tested / proxies.length) * 100);
+    process.stdout.write(`\r  TCP 测试: ${tested}/${proxies.length} (${pct}%)  存活: ${alive.length}`);
+  }
+  process.stdout.write('\n');
+  console.log(`  TCP 连通率: ${alive.length}/${proxies.length} (${Math.round((alive.length / proxies.length) * 100)}%)`);
+  return alive;
+}
+
 function topByCountry(proxies: Proxy[]): Proxy[] {
   const groups = new Map<string, Proxy[]>();
   for (const p of proxies) {
@@ -247,16 +279,17 @@ async function main() {
       { name: '精选', file: 'curated-raw.yaml' },
     ];
 
-    console.log(`\n跳过测速，仅精选 Top 筛选\n`);
+    console.log(`\nTCP 连通性测试 + 精选 Top 筛选\n`);
 
     for (const cat of categories) {
       const filePath = path.join(DATA_DIR, cat.file);
       let proxies = readYaml<{ proxies: Proxy[] }>(filePath).proxies;
       console.log(`${cat.name}节点 (${proxies.length}):`);
       if (cat.file === 'curated-raw.yaml') {
+        proxies = await tcpFilter(proxies);
         const before = proxies.length;
         proxies = topByCountry(proxies);
-        console.log(`  Top 筛选: ${proxies.length}/${before} (HK/TW 最多 ${CURATED_LIMITS['HK']}，其他 ${CURATED_DEFAULT_LIMIT})`);
+        console.log(`  Top 筛选: ${proxies.length}/${before}`);
       }
       writeYaml(filePath, { proxies });
     }
