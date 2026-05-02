@@ -114,6 +114,17 @@ function matchCuratedCountry(name: string): boolean {
   return code ? CURATED_COUNTRIES.has(code) : false;
 }
 
+const USEFUL_TAGS_RE = /\|(?:GPT⁺?|GM|YT|优|良|差|未知)/;
+
+function isCuratedQualified(name: string): boolean {
+  const lossMatch = name.match(/\|(\d+)%/);
+  if (lossMatch && parseInt(lossMatch[1], 10) > 10) return false;
+  if (/\|(?:History|Succeed)/.test(name) && !USEFUL_TAGS_RE.test(name)) return false;
+  const hasSpeed = /\d+(?:\.\d+)?\s*[MK]B\/s/.test(name);
+  if (!hasSpeed && !USEFUL_TAGS_RE.test(name) && !lossMatch) return false;
+  return true;
+}
+
 function dedup(results: FetchResult[]): {
   acl4ssr: Proxy[];
   freesub: Proxy[];
@@ -132,7 +143,7 @@ function dedup(results: FetchResult[]): {
   const acl4ssr = collectProxies(results, (s) => s.category === 'acl4ssr');
   const freesub = collectProxies(results, (s) => s.category === 'freesub');
   const curated = collectProxies(results, (s, p) =>
-    CURATED_SOURCES.has(s.name) && matchCuratedCountry(p.name) && !p.name.includes('|100%'),
+    CURATED_SOURCES.has(s.name) && matchCuratedCountry(p.name) && isCuratedQualified(p.name),
   );
   const all = collectProxies(results, () => true);
 

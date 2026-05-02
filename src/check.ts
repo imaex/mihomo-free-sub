@@ -187,8 +187,9 @@ function sortScore(name: string): number {
 function extractTags(name: string): string {
   const speed = name.match(/\|⬇?[\d.]+\s*[MK]B\/s/)?.[0] ?? '';
   const loss = name.match(/\|\d+%/)?.[0] ?? '';
-  const funcTags = name.match(/\|(?:GPT⁺?|GM|YT|优|良|差|未知)/g) ?? [];
-  return `${speed}${loss}${funcTags.join('')}`;
+  const mult = name.match(/[²¹⁰³⁴⁵⁶⁷⁸⁹⁻]+/)?.[0] ?? '';
+  const multStr = mult ? `|x${mult}` : '';
+  return `${speed}${loss}${multStr}`;
 }
 
 function topByCountry(proxies: Proxy[]): Proxy[] {
