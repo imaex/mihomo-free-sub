@@ -176,7 +176,7 @@ function buildNodesOnly(proxies: Proxy[]): { proxies: Proxy[] } {
 }
 
 const TCP_TIMEOUT = 5000;
-const TCP_CONCURRENCY = 50;
+const TCP_CONCURRENCY = 100;
 const TCP_RETRIES = 3;
 const TCP_RETRY_DELAY = 3000;
 
