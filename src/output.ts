@@ -454,6 +454,15 @@ function main() {
     'log-level': 'warning',
     'unified-delay': true,
     'tcp-concurrent': true,
+    'geodata-mode': true,
+    'geo-auto-update': true,
+    'geo-update-interval': 24,
+    'geox-url': {
+      geoip: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip-lite.dat',
+      geosite: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite-lite.dat',
+      mmdb: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country-lite.mmdb',
+      asn: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb',
+    },
     profile: { 'store-selected': true },
     dns: {
       enable: true,
