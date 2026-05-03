@@ -218,13 +218,13 @@ function convertProxy(p: Proxy): SingboxOutbound | null {
   }
 }
 
-const COUNTRY_GROUPS: Array<{ tag: string; prefix: string; re: RegExp }> = [
-  { tag: '🇭🇰 香港', prefix: 'HK', re: /HK_\d+/ },
-  { tag: '🇯🇵 日本', prefix: 'JP', re: /JP_\d+/ },
-  { tag: '🇺🇸 美国', prefix: 'US', re: /US_\d+/ },
-  { tag: '🇨🇳 台湾', prefix: 'TW', re: /TW_\d+/ },
-  { tag: '🇸🇬 新加坡', prefix: 'SG', re: /SG_\d+/ },
-  { tag: '🇰🇷 韩国', prefix: 'KR', re: /KR_\d+/ },
+const COUNTRY_GROUPS: Array<{ tag: string; re: RegExp }> = [
+  { tag: '🇭🇰 香港', re: /HK_\d+/ },
+  { tag: '🇯🇵 日本', re: /JP_\d+/ },
+  { tag: '🇺🇸 美国', re: /US_\d+/ },
+  { tag: '🇨🇳 台湾', re: /TW_\d+/ },
+  { tag: '🇸🇬 新加坡', re: /SG_\d+/ },
+  { tag: '🇰🇷 韩国', re: /KR_\d+/ },
 ];
 
 function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
@@ -333,15 +333,28 @@ function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
   };
 }
 
+function fixAiName(s: string): string {
+  return s.replace('💬 Ai平台', '💬 AI平台').replace('💬 OpenAi', '💬 AI平台');
+}
+
+function fixAiGroupName(groups: Record<string, unknown>[]): Record<string, unknown>[] {
+  return groups.map(g => ({ ...g, name: fixAiName(String(g.name)) }));
+}
+
+function fixAiRules(rules: string[]): string[] {
+  return rules.map(fixAiName);
+}
+
 // --- main ---
 
 function main() {
   const acl4ssrProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'acl4ssr-raw.yaml')).proxies;
   const freesubProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'freesub-raw.yaml')).proxies;
-  const curatedProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'curated-raw.yaml')).proxies;
+  const best1Proxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'best1-raw.yaml')).proxies;
+  const best2Proxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'best2-raw.yaml')).proxies;
   const allProxies = readYaml<{ proxies: Proxy[] }>(path.join(DATA_DIR, 'all-raw.yaml')).proxies;
 
-  console.log(`ACL4SSR: ${acl4ssrProxies.length}, freeSub: ${freesubProxies.length}, 精选: ${curatedProxies.length}, 全部: ${allProxies.length}`);
+  console.log(`ACL4SSR: ${acl4ssrProxies.length}, freeSub: ${freesubProxies.length}, best1: ${best1Proxies.length}, best2: ${best2Proxies.length}, 全部: ${allProxies.length}`);
 
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
@@ -386,36 +399,60 @@ function main() {
     console.log(`已写入 output/freesub-nodes.yaml`);
   }
 
-  // curated full config (uses acl4ssr template)
-  if (acl4ssrTemplate && curatedProxies.length > 0) {
-    writeYaml(path.join(OUTPUT_DIR, 'curated.yaml'), {
-      proxies: curatedProxies,
-      'proxy-groups': acl4ssrTemplate['proxy-groups'],
-      rules: acl4ssrTemplate.rules,
-      'rule-providers': acl4ssrTemplate['rule-providers'],
-      dns: acl4ssrTemplate.dns,
-    });
-    console.log(`已写入 output/curated.yaml (${curatedProxies.length} 节点)`);
-  }
+  // best1/best2 outputs (both use acl4ssr template with OpenAi→AI平台 fix)
+  const fixedGroups = acl4ssrTemplate ? fixAiGroupName(acl4ssrTemplate['proxy-groups'] as Record<string, unknown>[]) : null;
+  const fixedRules = acl4ssrTemplate ? fixAiRules(acl4ssrTemplate.rules as string[]) : null;
 
-  // curated nodes only
-  if (curatedProxies.length > 0) {
-    writeYaml(path.join(OUTPUT_DIR, 'curated-nodes.yaml'), { proxies: curatedProxies });
-    console.log(`已写入 output/curated-nodes.yaml`);
-  }
+  const bestBase = {
+    'mixed-port': 7890,
+    'allow-lan': false,
+    mode: 'rule',
+    'log-level': 'warning',
+    'unified-delay': true,
+    'tcp-concurrent': true,
+    profile: { 'store-selected': true },
+    dns: {
+      enable: true,
+      'enhanced-mode': 'fake-ip',
+      'fake-ip-range': '198.18.0.1/16',
+      'fake-ip-filter': ['*.lan', '*.local', '+.msftconnecttest.com', '+.msftncsi.com', 'localhost.ptlogin2.qq.com'],
+      'default-nameserver': ['223.5.5.5', '119.29.29.29'],
+      nameserver: ['https://dns.alidns.com/dns-query', 'https://doh.pub/dns-query'],
+    },
+  };
 
-  // curated sing-box format
-  if (curatedProxies.length > 0) {
-    const singboxConfig = mihomoToSingbox(curatedProxies);
+  const bestGroups: Array<{ label: string; proxies: Proxy[] }> = [
+    { label: 'best1', proxies: best1Proxies },
+    { label: 'best2', proxies: best2Proxies },
+  ];
+
+  for (const { label, proxies } of bestGroups) {
+    if (proxies.length === 0) continue;
+
+    if (acl4ssrTemplate && fixedGroups && fixedRules) {
+      writeYaml(path.join(OUTPUT_DIR, `${label}.yaml`), {
+        ...bestBase,
+        proxies,
+        'proxy-groups': fixedGroups,
+        rules: fixedRules,
+        'rule-providers': acl4ssrTemplate['rule-providers'],
+      });
+      console.log(`已写入 output/${label}.yaml (${proxies.length} 节点)`);
+    }
+
+    writeYaml(path.join(OUTPUT_DIR, `${label}-nodes.yaml`), { proxies });
+    console.log(`已写入 output/${label}-nodes.yaml`);
+
+    const singboxConfig = mihomoToSingbox(proxies);
     fs.writeFileSync(
-      path.join(OUTPUT_DIR, 'curated-singbox.json'),
+      path.join(OUTPUT_DIR, `${label}-singbox.json`),
       JSON.stringify(singboxConfig, null, 2),
       'utf-8',
     );
     const proxyCount = (singboxConfig.outbounds as unknown[]).filter(
       (o: unknown) => !['selector', 'urltest', 'direct', 'block', 'dns'].includes((o as Record<string, string>).type),
     ).length;
-    console.log(`已写入 output/curated-singbox.json (${proxyCount} 节点)`);
+    console.log(`已写入 output/${label}-singbox.json (${proxyCount} 节点)`);
   }
 
   // all nodes

@@ -161,8 +161,8 @@ const COUNTRY_FLAGS: Record<string, string> = {
   HK: '🇭🇰', JP: '🇯🇵', US: '🇺🇸', TW: '🇨🇳', SG: '🇸🇬', KR: '🇰🇷',
 };
 
-const CURATED_LIMITS: Record<string, number> = { HK: 100, US: 50 };
-const CURATED_DEFAULT_LIMIT = 20;
+const BEST1_LIMITS: Record<string, number> = { HK: 50, US: 30 };
+const BEST1_DEFAULT_LIMIT = 20;
 
 function parseSpeed(name: string): number {
   const m = name.match(/(\d+(?:\.\d+)?)\s*(MB|KB)\/s/);
@@ -203,7 +203,7 @@ function extractTags(name: string): string {
   return `${speed}${multStr}${lossStr}`;
 }
 
-function topByCountry(proxies: Proxy[]): Proxy[] {
+function topByCountry(proxies: Proxy[], limits?: Record<string, number>, defaultLimit?: number): Proxy[] {
   const groups = new Map<string, Proxy[]>();
   for (const p of proxies) {
     const code = extractCountryCode(p.name) ?? '??';
@@ -212,9 +212,14 @@ function topByCountry(proxies: Proxy[]): Proxy[] {
   }
   const result: Proxy[] = [];
   for (const [code, members] of groups) {
-    const limit = CURATED_LIMITS[code] ?? CURATED_DEFAULT_LIMIT;
     members.sort((a, b) => sortScore(b.name) - sortScore(a.name));
-    const top = members.slice(0, limit);
+    let top: Proxy[];
+    if (limits && defaultLimit !== undefined) {
+      const limit = limits[code] ?? defaultLimit;
+      top = members.slice(0, limit);
+    } else {
+      top = members;
+    }
     for (let i = 0; i < top.length; i++) {
       const flag = COUNTRY_FLAGS[code] ?? '';
       const tags = extractTags(top[i].name);
@@ -232,22 +237,23 @@ async function main() {
   ensureTempDir();
 
   try {
-    const categories = [
+    const categories: Array<{ name: string; file: string; limits?: Record<string, number>; defaultLimit?: number }> = [
       { name: '全部', file: 'all-raw.yaml' },
       { name: 'ACL4SSR', file: 'acl4ssr-raw.yaml' },
       { name: 'freeSub', file: 'freesub-raw.yaml' },
-      { name: '精选', file: 'curated-raw.yaml' },
+      { name: 'best1', file: 'best1-raw.yaml', limits: BEST1_LIMITS, defaultLimit: BEST1_DEFAULT_LIMIT },
+      { name: 'best2', file: 'best2-raw.yaml', limits: {} },
     ];
 
-    console.log(`\n精选 Top 筛选\n`);
+    console.log(`\nbest Top 筛选\n`);
 
     for (const cat of categories) {
       const filePath = path.join(DATA_DIR, cat.file);
       let proxies = readYaml<{ proxies: Proxy[] }>(filePath).proxies;
       console.log(`${cat.name}节点 (${proxies.length}):`);
-      if (cat.file === 'curated-raw.yaml') {
+      if (cat.limits) {
         const before = proxies.length;
-        proxies = topByCountry(proxies);
+        proxies = topByCountry(proxies, cat.limits, cat.defaultLimit);
         console.log(`  Top 筛选: ${proxies.length}/${before}`);
       }
       writeYaml(filePath, { proxies });

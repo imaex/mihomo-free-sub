@@ -119,11 +119,10 @@ function matchCuratedCountry(name: string): boolean {
   return code ? CURATED_COUNTRIES.has(code) : false;
 }
 
-const USEFUL_TAGS_RE = /\|(?:GPT⁺?|GM|YT)/;
+const HAS_SPEED_RE = /\d+(?:\.\d+)?\s*[MK]B\/s/;
 
-function isCuratedQualified(name: string): boolean {
-  const hasSpeed = /\d+(?:\.\d+)?\s*[MK]B\/s/.test(name);
-  if (hasSpeed) return true;
+function isBest2Qualified(name: string): boolean {
+  if (HAS_SPEED_RE.test(name)) return true;
   const mult = parseMultiplier(name);
   if (mult !== 2 && mult !== 1) return false;
   const lossMatch = name.match(/\|(\d+)%/);
@@ -132,10 +131,15 @@ function isCuratedQualified(name: string): boolean {
   return true;
 }
 
+function isBest1Qualified(name: string): boolean {
+  return HAS_SPEED_RE.test(name);
+}
+
 function dedup(results: FetchResult[]): {
   acl4ssr: Proxy[];
   freesub: Proxy[];
-  curated: Proxy[];
+  best1: Proxy[];
+  best2: Proxy[];
   all: Proxy[];
   templateAcl4ssr: ParsedConfig | null;
   templateFreesub: ParsedConfig | null;
@@ -149,8 +153,11 @@ function dedup(results: FetchResult[]): {
 
   const acl4ssr = collectProxies(results, (s) => s.category === 'acl4ssr');
   const freesub = collectProxies(results, (s) => s.category === 'freesub');
-  const curated = collectProxies(results, (s, p) =>
-    CURATED_SOURCES.has(s.name) && matchCuratedCountry(p.name) && isCuratedQualified(p.name),
+  const best1 = collectProxies(results, (s, p) =>
+    CURATED_SOURCES.has(s.name) && matchCuratedCountry(p.name) && isBest1Qualified(p.name),
+  );
+  const best2 = collectProxies(results, (s, p) =>
+    CURATED_SOURCES.has(s.name) && matchCuratedCountry(p.name) && isBest2Qualified(p.name),
   );
   const all = collectProxies(results, () => true);
 
@@ -161,7 +168,7 @@ function dedup(results: FetchResult[]): {
     if (source.category === 'freesub' && !templateFreesub) templateFreesub = config;
   }
 
-  return { acl4ssr, freesub, curated, all, templateAcl4ssr, templateFreesub };
+  return { acl4ssr, freesub, best1, best2, all, templateAcl4ssr, templateFreesub };
 }
 
 function buildNodesOnly(proxies: Proxy[]): { proxies: Proxy[] } {
@@ -241,18 +248,19 @@ async function main() {
 
   console.log(`\n成功 ${results.length}/${sources.length} 个源`);
 
-  const { acl4ssr, freesub, curated, all, templateAcl4ssr, templateFreesub } = dedup(results);
+  const { acl4ssr, freesub, best1, best2, all, templateAcl4ssr, templateFreesub } = dedup(results);
 
-  console.log(`\n去重后: ACL4SSR ${acl4ssr.length}, freeSub ${freesub.length}, 精选 ${curated.length}, 全部 ${all.length}`);
+  console.log(`\n去重后: ACL4SSR ${acl4ssr.length}, freeSub ${freesub.length}, best1 ${best1.length}, best2 ${best2.length}, 全部 ${all.length}`);
 
   const aliveSet = await tcpFilterAll(all);
 
   const acl4ssrAlive = filterByAlive(acl4ssr, aliveSet);
   const freesubAlive = filterByAlive(freesub, aliveSet);
-  const curatedAlive = filterByAlive(curated, aliveSet);
+  const best1Alive = filterByAlive(best1, aliveSet);
+  const best2Alive = filterByAlive(best2, aliveSet);
   const allAlive = filterByAlive(all, aliveSet);
 
-  console.log(`\nTCP 过滤后: ACL4SSR ${acl4ssrAlive.length}, freeSub ${freesubAlive.length}, 精选 ${curatedAlive.length}, 全部 ${allAlive.length}`);
+  console.log(`\nTCP 过滤后: ACL4SSR ${acl4ssrAlive.length}, freeSub ${freesubAlive.length}, best1 ${best1Alive.length}, best2 ${best2Alive.length}, 全部 ${allAlive.length}`);
 
   // save intermediate data
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -260,7 +268,8 @@ async function main() {
   writeYaml(path.join(DATA_DIR, 'all-raw.yaml'), buildNodesOnly(allAlive));
   writeYaml(path.join(DATA_DIR, 'acl4ssr-raw.yaml'), buildNodesOnly(acl4ssrAlive));
   writeYaml(path.join(DATA_DIR, 'freesub-raw.yaml'), buildNodesOnly(freesubAlive));
-  writeYaml(path.join(DATA_DIR, 'curated-raw.yaml'), buildNodesOnly(curatedAlive));
+  writeYaml(path.join(DATA_DIR, 'best1-raw.yaml'), buildNodesOnly(best1Alive));
+  writeYaml(path.join(DATA_DIR, 'best2-raw.yaml'), buildNodesOnly(best2Alive));
 
   // save templates
   if (templateAcl4ssr) {
