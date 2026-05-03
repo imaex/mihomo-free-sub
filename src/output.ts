@@ -369,7 +369,9 @@ function reorderBestGroups(groups: Record<string, unknown>[]): Record<string, un
   return [...head, ...regions, ...rest].map(g => {
     const newName = BEST_RENAME_GROUPS[String(g.name)];
     const proxies = g.proxies as string[] | undefined;
-    const renamedProxies = proxies?.map(p => BEST_RENAME_GROUPS[p] ?? p);
+    const renamedProxies = proxies
+      ?.filter(p => !DROP_GROUP_NAMES.has(p))
+      .map(p => BEST_RENAME_GROUPS[p] ?? p);
     return {
       ...g,
       ...(newName ? { name: newName } : {}),
