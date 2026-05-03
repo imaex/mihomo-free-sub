@@ -111,12 +111,12 @@ function collectProxies(
   return proxies;
 }
 
-const CURATED_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getnode', 'yahr601', 'NoMoreWalls']);
-const CURATED_COUNTRIES = new Set(['HK', 'JP', 'US', 'TW', 'SG', 'KR']);
+const BEST_SOURCES = new Set(['FreeSubsCheck', 'shaoyouvip', 'dalazhi', 'getnode', 'yahr601', 'NoMoreWalls']);
+const BEST_COUNTRIES = new Set(['HK', 'JP', 'US', 'TW', 'SG', 'KR']);
 
-function matchCuratedCountry(name: string): boolean {
+function matchBestCountry(name: string): boolean {
   const code = extractCountryCode(name);
-  return code ? CURATED_COUNTRIES.has(code) : false;
+  return code ? BEST_COUNTRIES.has(code) : false;
 }
 
 const HAS_SPEED_RE = /\d+(?:\.\d+)?\s*[MK]B\/s/;
@@ -154,10 +154,10 @@ function dedup(results: FetchResult[]): {
   const acl4ssr = collectProxies(results, (s) => s.category === 'acl4ssr');
   const freesub = collectProxies(results, (s) => s.category === 'freesub');
   const best1 = collectProxies(results, (s, p) =>
-    CURATED_SOURCES.has(s.name) && matchCuratedCountry(p.name) && isBest1Qualified(p.name),
+    BEST_SOURCES.has(s.name) && matchBestCountry(p.name) && isBest1Qualified(p.name),
   );
   const best2 = collectProxies(results, (s, p) =>
-    CURATED_SOURCES.has(s.name) && matchCuratedCountry(p.name) && isBest2Qualified(p.name),
+    BEST_SOURCES.has(s.name) && matchBestCountry(p.name) && isBest2Qualified(p.name),
   );
   const all = collectProxies(results, () => true);
 

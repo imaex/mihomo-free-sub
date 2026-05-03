@@ -24,13 +24,11 @@ export const sources: Source[] = [
   { name: 'chromego', url: `${GH}/Misaka-blog/chromego_merge/main/sub/merged_proxies_new.yaml`, category: 'other' },
   { name: 'awesome-vpn', url: `${GH}/awesome-vpn/awesome-vpn/master/clash.yaml`, category: 'other' },
   { name: 'V2RayAggregator', url: `${GH}/mahdibland/V2RayAggregator/master/Eternity.yml`, category: 'other' },
-  { name: 'Pawdroid', url: `${GH}/Pawdroid/Free-servers/main/sub`, category: 'other' },
   { name: 'ermaozi', url: `${GH}/ermaozi/get_subscribe/main/subscribe/clash.yml`, category: 'other' },
   { name: 'v2rayfree', url: `${GH}/v2raynnodes/v2rayfree/main/nodes/clashmeta.yaml`, category: 'other' },
   { name: 'yudou66', url: `${GH}/Barabama/FreeNodes/main/nodes/yudou66.yaml`, category: 'other' },
   { name: 'wenode', url: `${GH}/Barabama/FreeNodes/main/nodes/wenode.yaml`, category: 'other' },
   { name: 'dongtai-sub', url: `${GH}/wenxig/dongtai-sub/refs/heads/main/data/sub.yaml`, category: 'other' },
-  { name: 'kasesm', url: `${GH}/kasesm/Free-Config/refs/heads/main/all_raw.txt`, category: 'other' },
   { name: 'Au1rxx', url: `${GH}/Au1rxx/free-vpn-subscriptions/main/output/clash.yaml`, category: 'other' },
   { name: 'NoMoreWalls', url: `${GH}/peasoft/NoMoreWalls/master/list.meta.yml`, category: 'other' },
 ];

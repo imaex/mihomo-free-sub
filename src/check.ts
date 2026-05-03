@@ -237,12 +237,12 @@ async function main() {
   ensureTempDir();
 
   try {
-    const categories: Array<{ name: string; file: string; limits?: Record<string, number>; defaultLimit?: number }> = [
+    const categories: Array<{ name: string; file: string; sort?: boolean; limits?: Record<string, number>; defaultLimit?: number }> = [
       { name: '全部', file: 'all-raw.yaml' },
       { name: 'ACL4SSR', file: 'acl4ssr-raw.yaml' },
       { name: 'freeSub', file: 'freesub-raw.yaml' },
-      { name: 'best1', file: 'best1-raw.yaml', limits: BEST1_LIMITS, defaultLimit: BEST1_DEFAULT_LIMIT },
-      { name: 'best2', file: 'best2-raw.yaml', limits: {} },
+      { name: 'best1', file: 'best1-raw.yaml', sort: true, limits: BEST1_LIMITS, defaultLimit: BEST1_DEFAULT_LIMIT },
+      { name: 'best2', file: 'best2-raw.yaml', sort: true },
     ];
 
     console.log(`\nbest Top 筛选\n`);
@@ -251,12 +251,12 @@ async function main() {
       const filePath = path.join(DATA_DIR, cat.file);
       let proxies = readYaml<{ proxies: Proxy[] }>(filePath).proxies;
       console.log(`${cat.name}节点 (${proxies.length}):`);
-      if (cat.limits) {
+      if (cat.sort) {
         const before = proxies.length;
         proxies = topByCountry(proxies, cat.limits, cat.defaultLimit);
         console.log(`  Top 筛选: ${proxies.length}/${before}`);
+        writeYaml(filePath, { proxies });
       }
-      writeYaml(filePath, { proxies });
     }
 
     console.log(`\n已更新 data/ 目录`);
