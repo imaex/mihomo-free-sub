@@ -219,12 +219,12 @@ function convertProxy(p: Proxy): SingboxOutbound | null {
 }
 
 const COUNTRY_GROUPS: Array<{ tag: string; re: RegExp }> = [
-  { tag: '🇭🇰 香港', re: /HK_\d+/ },
-  { tag: '🇯🇵 日本', re: /JP_\d+/ },
-  { tag: '🇺🇸 美国', re: /US_\d+/ },
-  { tag: '🇨🇳 台湾', re: /TW_\d+/ },
-  { tag: '🇸🇬 新加坡', re: /SG_\d+/ },
-  { tag: '🇰🇷 韩国', re: /KR_\d+/ },
+  { tag: '🇭🇰 香港节点', re: /HK_\d+/ },
+  { tag: '🇯🇵 日本节点', re: /JP_\d+/ },
+  { tag: '🇺🇲 美国节点', re: /US_\d+/ },
+  { tag: '🇨🇳 台湾节点', re: /TW_\d+/ },
+  { tag: '🇸🇬 狮城节点', re: /SG_\d+/ },
+  { tag: '🇰🇷 韩国节点', re: /KR_\d+/ },
 ];
 
 function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
@@ -258,18 +258,24 @@ function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
 
   const autoGroup: SingboxOutbound = {
     type: 'urltest',
-    tag: 'auto',
+    tag: '♻️ 自动选择',
     outbounds: allTags,
     url: 'https://www.gstatic.com/generate_204',
     interval: '3m',
     tolerance: 50,
   };
 
+  const manualGroup: SingboxOutbound = {
+    type: 'selector',
+    tag: '🔀 手动切换',
+    outbounds: [...allTags, 'direct'],
+  };
+
   const selector: SingboxOutbound = {
     type: 'selector',
-    tag: 'proxy',
-    outbounds: ['auto', ...groupTags, ...allTags, 'direct'],
-    default: 'auto',
+    tag: '🚀 代理入口',
+    outbounds: ['♻️ 自动选择', '🔀 手动切换', ...groupTags, 'direct'],
+    default: '♻️ 自动选择',
   };
 
   return {
@@ -279,7 +285,7 @@ function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
     },
     dns: {
       servers: [
-        { tag: 'dns_proxy', address: 'https://1.1.1.1/dns-query', address_resolver: 'dns_resolver', strategy: 'ipv4_only', detour: 'proxy' },
+        { tag: 'dns_proxy', address: 'https://1.1.1.1/dns-query', address_resolver: 'dns_resolver', strategy: 'ipv4_only', detour: '🚀 代理入口' },
         { tag: 'dns_direct', address: 'https://dns.alidns.com/dns-query', address_resolver: 'dns_resolver', strategy: 'ipv4_only', detour: 'direct' },
         { tag: 'dns_resolver', address: '223.5.5.5', detour: 'direct' },
         { tag: 'dns_block', address: 'rcode://success' },
@@ -306,6 +312,7 @@ function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
     outbounds: [
       selector,
       autoGroup,
+      manualGroup,
       ...countryGroups,
       { type: 'direct', tag: 'direct' },
       { type: 'block', tag: 'block' },
@@ -319,16 +326,16 @@ function mihomoToSingbox(proxies: Proxy[]): Record<string, unknown> {
         { rule_set: 'geosite-category-ads-all', outbound: 'block' },
         { rule_set: 'geosite-cn', outbound: 'direct' },
         { rule_set: 'geoip-cn', outbound: 'direct' },
-        { rule_set: 'geosite-geolocation-!cn', outbound: 'proxy' },
+        { rule_set: 'geosite-geolocation-!cn', outbound: '🚀 代理入口' },
       ],
       rule_set: [
-        { tag: 'geosite-cn', type: 'remote', format: 'binary', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geosite/cn.srs', download_detour: 'direct' },
-        { tag: 'geosite-geolocation-!cn', type: 'remote', format: 'binary', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geosite/geolocation-!cn.srs', download_detour: 'direct' },
-        { tag: 'geosite-category-ads-all', type: 'remote', format: 'binary', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geosite/category-ads-all.srs', download_detour: 'direct' },
-        { tag: 'geoip-cn', type: 'remote', format: 'binary', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geoip/cn.srs', download_detour: 'direct' },
+        { tag: 'geosite-cn', type: 'remote', format: 'binary', url: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geosite/cn.srs', download_detour: 'direct' },
+        { tag: 'geosite-geolocation-!cn', type: 'remote', format: 'binary', url: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geosite/geolocation-!cn.srs', download_detour: 'direct' },
+        { tag: 'geosite-category-ads-all', type: 'remote', format: 'binary', url: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geosite/category-ads-all.srs', download_detour: 'direct' },
+        { tag: 'geoip-cn', type: 'remote', format: 'binary', url: 'https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geoip/cn.srs', download_detour: 'direct' },
       ],
       auto_detect_interface: true,
-      final: 'proxy',
+      final: '🚀 代理入口',
     },
   };
 }
@@ -343,6 +350,41 @@ function fixAiGroupName(groups: Record<string, unknown>[]): Record<string, unkno
 
 function fixAiRules(rules: string[]): string[] {
   return rules.map(fixAiName);
+}
+
+const BEST_RENAME_GROUPS: Record<string, string> = {
+  '🚀 节点选择': '🚀 代理入口',
+  '🚀 手动切换': '🔀 手动切换',
+};
+
+const REGION_GROUP_NAMES = new Set(['🇭🇰 香港节点', '🇯🇵 日本节点', '🇺🇲 美国节点', '🇨🇳 台湾节点', '🇸🇬 狮城节点', '🇰🇷 韩国节点']);
+const DROP_GROUP_NAMES = new Set(['🎥 奈飞节点']);
+
+function reorderBestGroups(groups: Record<string, unknown>[]): Record<string, unknown>[] {
+  const head = groups.slice(0, 3);
+  const regions = groups.filter(g => REGION_GROUP_NAMES.has(String(g.name)));
+  const rest = groups.slice(3).filter(g =>
+    !REGION_GROUP_NAMES.has(String(g.name)) && !DROP_GROUP_NAMES.has(String(g.name)),
+  );
+  return [...head, ...regions, ...rest].map(g => {
+    const newName = BEST_RENAME_GROUPS[String(g.name)];
+    const proxies = g.proxies as string[] | undefined;
+    const renamedProxies = proxies?.map(p => BEST_RENAME_GROUPS[p] ?? p);
+    return {
+      ...g,
+      ...(newName ? { name: newName } : {}),
+      ...(renamedProxies ? { proxies: renamedProxies } : {}),
+    };
+  });
+}
+
+function renameBestRules(rules: string[]): string[] {
+  return rules.filter(r => !DROP_GROUP_NAMES.has(r.split(',').pop()!)).map(r => {
+    for (const [from, to] of Object.entries(BEST_RENAME_GROUPS)) {
+      if (r.includes(from)) return r.replace(from, to);
+    }
+    return r;
+  });
 }
 
 // --- main ---
@@ -400,8 +442,8 @@ function main() {
   }
 
   // best1/best2 outputs (both use acl4ssr template with OpenAi→AI平台 fix)
-  const fixedGroups = acl4ssrTemplate ? fixAiGroupName(acl4ssrTemplate['proxy-groups'] as Record<string, unknown>[]) : null;
-  const fixedRules = acl4ssrTemplate ? fixAiRules(acl4ssrTemplate.rules as string[]) : null;
+  const fixedGroups = acl4ssrTemplate ? reorderBestGroups(fixAiGroupName(acl4ssrTemplate['proxy-groups'] as Record<string, unknown>[])) : null;
+  const fixedRules = acl4ssrTemplate ? renameBestRules(fixAiRules(acl4ssrTemplate.rules as string[])) : null;
 
   const bestBase = {
     'mixed-port': 7890,

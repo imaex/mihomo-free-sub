@@ -18,7 +18,9 @@ Free Mihomo/Clash/sing-box subscription aggregator, updated hourly.
 | FreeSub nodes only | `https://raw.githubusercontent.com/imaex/free-sub/sub/freesub-nodes.yaml` |
 | All nodes | `https://raw.githubusercontent.com/imaex/free-sub/sub/all-nodes.yaml` |
 
-CN mirror: replace `https://raw.githubusercontent.com/` with `https://gh-proxy.org/raw.githubusercontent.com/`
+CN mirror:
+- gh-proxy: replace `https://raw.githubusercontent.com/` with `https://v6.gh-proxy.com/raw.githubusercontent.com/`
+- jsdelivr: replace `https://raw.githubusercontent.com/imaex/free-sub/sub/` with `https://testingcf.jsdelivr.net/gh/imaex/free-sub@sub/`
 
 ## How it works
 
