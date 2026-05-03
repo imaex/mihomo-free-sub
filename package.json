@@ -6,6 +6,7 @@
     "fetch": "tsx src/fetch.ts",
     "check": "tsx src/check.ts",
     "output": "tsx src/output.ts",
+    "bench": "tsx src/bench.ts",
     "run": "tsx src/fetch.ts && tsx src/check.ts && tsx src/output.ts"
   },
   "devDependencies": {
